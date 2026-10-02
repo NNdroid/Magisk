@@ -68,6 +68,19 @@ object WebUiManager {
         }
     }
 
+    fun reportError(message: String) {
+        synchronized(lock) {
+            server?.stop()
+            server = null
+            _state.value = WebUiState(
+                running = false,
+                authMode = Config.webUiAuthMode,
+                themeMode = Config.webUiTheme,
+                error = message,
+            )
+        }
+    }
+
     fun stop() {
         synchronized(lock) {
             server?.stop()
