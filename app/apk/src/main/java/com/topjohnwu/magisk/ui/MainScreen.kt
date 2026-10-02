@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -150,13 +153,14 @@ fun MainScreen(
                 onClick = { moduleFabAction?.invoke() },
                 modifier = Modifier
                     .focusRequester(fabFocusRequester)
-                    .tvFocusFrame(shape = RoundedCornerShape(20.dp))
+                    .tvFocusFrame(shape = RoundedCornerShape(22.dp))
                     .focusProperties {
                         up = moduleContentFocusRequester
                         modulesNavFocusRequester?.let { left = it }
                         down = FocusRequester.Cancel
                         right = FocusRequester.Cancel
                     },
+                shape = RoundedCornerShape(22.dp),
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ) {
@@ -169,25 +173,40 @@ fun MainScreen(
         }
     }
 
-    Row(modifier = modifier.fillMaxSize()) {
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+    ) {
         NavigationRail(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(176.dp)
+                .width(188.dp)
                 .focusGroup(),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
-            Spacer(Modifier.height(24.dp))
-            Icon(
-                painter = painterResource(CoreR.drawable.ic_magisk_outline),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(48.dp),
-            )
+            Spacer(Modifier.height(22.dp))
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(68.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(22.dp),
+                    ),
+            ) {
+                Icon(
+                    painter = painterResource(CoreR.drawable.ic_magisk_outline),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(42.dp),
+                )
+            }
             Text(
                 text = stringResource(CoreR.string.magisk),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 22.dp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 10.dp, bottom = 20.dp),
             )
 
             visibleTabs.forEachIndexed { index, tab ->
@@ -195,15 +214,15 @@ fun MainScreen(
                     selected = currentPage == index,
                     onClick = { restoredPage = index },
                     modifier = Modifier
-                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                         .fillMaxWidth()
                         .focusRequester(tabFocusRequesters[index])
-                        .tvFocusFrame(shape = RoundedCornerShape(24.dp)),
+                        .tvFocusFrame(shape = RoundedCornerShape(26.dp)),
                     icon = {
                         Icon(
                             imageVector = ImageVector.vectorResource(tab.iconRes),
                             contentDescription = stringResource(tab.titleRes),
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(31.dp),
                         )
                     },
                     label = {
@@ -213,6 +232,13 @@ fun MainScreen(
                         )
                     },
                     alwaysShowLabel = true,
+                    colors = NavigationRailItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
                 )
             }
         }
@@ -221,6 +247,7 @@ fun MainScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight(),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
             floatingActionButton = moduleFab,
         ) { innerPadding ->
@@ -246,10 +273,10 @@ fun MainScreen(
                         Column(modifier = Modifier.fillMaxSize()) {
                             WebUiCard(
                                 modifier = Modifier.padding(
-                                    start = 28.dp,
-                                    top = 16.dp,
-                                    end = 28.dp,
-                                    bottom = 6.dp,
+                                    start = 32.dp,
+                                    top = 20.dp,
+                                    end = 32.dp,
+                                    bottom = 8.dp,
                                 ),
                             )
                             HomeScreen(
