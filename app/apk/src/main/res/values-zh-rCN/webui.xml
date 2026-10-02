@@ -17,4 +17,8 @@
     <string name="webui_qr_description">打开 Magisk WebUI 的二维码</string>
     <string name="webui_error">WebUI 错误：%1$s</string>
     <string name="webui_local_network_permission_denied">Android 17 上必须授予局域网权限，WebUI 才能接受局域网连接。</string>
+    <string name="webui_service_channel">Magisk WebUI</string>
+    <string name="webui_service_channel_description">让 Android TV 的局域网 WebUI 在后台持续可用。</string>
+    <string name="webui_service_title">Magisk WebUI 正在运行</string>
+    <string name="webui_service_text">正在监听本机端口 %1$d</string>
 </resources>
