@@ -14,6 +14,7 @@
 
   const titles = {
     dashboard: ['概览', '设备与 Magisk 状态'],
+    install: ['安装与修补', '从浏览器上传文件并复用 Magisk 原生安装流程'],
     modules: ['模块', '管理已安装的 Magisk 模块'],
     superuser: ['超级用户', '管理 MagiskSU 授权策略'],
     logs: ['日志', 'SU 与 Magisk 运行日志'],
@@ -28,8 +29,6 @@
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
   }
 
-  function boolText(value) { return value ? '<span class="good">已启用</span>' : '<span class="bad">未启用</span>'; }
-
   function takeFragmentToken() {
     const hash = location.hash.startsWith('#') ? location.hash.slice(1) : location.hash;
     const params = new URLSearchParams(hash);
@@ -41,14 +40,7 @@
     }
   }
 
-  async function api(path, options = {}) {
-    const headers = new Headers(options.headers || {});
-    if (state.token) headers.set('Authorization', `Bearer ${state.token}`);
-    if (options.body && typeof options.body !== 'string') {
-      headers.set('Content-Type', 'application/json');
-      options.body = JSON.stringify(options.body);
-    }
-    const response = await fetch(path, { ...options, headers, cache: 'no-store' });
+  async function decodeResponse(response) {
     let payload = {};
     try { payload = await response.json(); } catch (_) {}
     if (response.status === 401) {
@@ -57,6 +49,35 @@
     }
     if (!response.ok) throw new Error(payload.message || `HTTP ${response.status}`);
     return payload;
+  }
+
+  function authHeaders() {
+    const headers = new Headers();
+    if (state.token) headers.set('Authorization', `Bearer ${state.token}`);
+    return headers;
+  }
+
+  async function api(path, options = {}) {
+    const headers = new Headers(options.headers || {});
+    if (state.token) headers.set('Authorization', `Bearer ${state.token}`);
+    if (options.body && typeof options.body !== 'string') {
+      headers.set('Content-Type', 'application/json');
+      options.body = JSON.stringify(options.body);
+    }
+    const response = await fetch(path, { ...options, headers, cache: 'no-store' });
+    return decodeResponse(response);
+  }
+
+  async function uploadApi(path, file) {
+    const data = new FormData();
+    data.append('file', file, file.name);
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: data,
+      cache: 'no-store',
+    });
+    return decodeResponse(response);
   }
 
   async function publicApi() {
@@ -102,6 +123,12 @@
     $('#modal').classList.remove('hidden');
   }
 
+  function operationOutput(result) {
+    const consoleLines = result.console || [];
+    const logLines = result.logs || [];
+    return [...consoleLines, ...(logLines.length ? ['', '--- logs ---', ...logLines] : [])].join('\n');
+  }
+
   function activatePage(page) {
     state.page = page;
     $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.page === page));
@@ -133,6 +160,60 @@
     connected(true);
   }
 
+  async function runUpload(form, input, path, stateNode, title, confirmText) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!confirm(`${confirmText}\n\n${file.name} · ${formatBytes(file.size)}`)) return;
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    const oldText = button.textContent;
+    button.textContent = '处理中…';
+    stateNode.textContent = '正在上传并执行，请保持页面打开。大文件可能需要几分钟。';
+    try {
+      const result = await uploadApi(path, file);
+      stateNode.textContent = result.ok ? '操作完成。' : '操作失败。';
+      showModal(title, operationOutput(result));
+      toast(result.ok ? '操作完成' : '操作失败');
+      form.reset();
+      return result;
+    } finally {
+      button.disabled = false;
+      button.textContent = oldText;
+    }
+  }
+
+  async function installModuleUpload(event) {
+    event.preventDefault();
+    const result = await runUpload(
+      event.currentTarget,
+      $('#moduleUploadFile'),
+      '/api/install/module',
+      $('#moduleUploadState'),
+      '模块安装输出',
+      '确定上传并安装此 Magisk 模块？',
+    );
+    if (result?.ok) await loadModules();
+  }
+
+  async function patchImageUpload(event) {
+    event.preventDefault();
+    await runUpload(
+      event.currentTarget,
+      $('#patchUploadFile'),
+      '/api/install/patch',
+      $('#patchUploadState'),
+      '镜像修补输出',
+      '确定上传并修补此启动镜像？',
+    );
+  }
+
+  function formatBytes(bytes) {
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    const units = ['B','KiB','MiB','GiB'];
+    const power = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    return `${(bytes / Math.pow(1024, power)).toFixed(power ? 1 : 0)} ${units[power]}`;
+  }
+
   async function loadModules() {
     const { modules = [] } = await api('/api/modules');
     $('#moduleList').innerHTML = modules.length ? modules.map(m => `
@@ -154,7 +235,6 @@
       showModal(`模块操作 · ${id}`, [...(result.stdout || []), ...(result.stderr || [])].join('\n'));
       return;
     }
-    const row = target.closest('[data-module-id]');
     const isToggle = action === 'toggle';
     const body = isToggle ? { enabled: target.textContent.trim() === '启用' } : { remove: target.textContent.trim() === '删除' };
     await api(`/api/modules/${encodeURIComponent(id)}/state`, { method: 'POST', body });
@@ -311,6 +391,8 @@
     localStorage.setItem('magiskWebUiToken', state.token);
     try { await loadStatus(); hideAuth(); toast('认证成功'); } catch (error) { showAuth(error.message); }
   });
+  $('#moduleUploadForm').addEventListener('submit', e => installModuleUpload(e).catch(error => { $('#moduleUploadState').textContent = error.message; showError(error); }));
+  $('#patchUploadForm').addEventListener('submit', e => patchImageUpload(e).catch(error => { $('#patchUploadState').textContent = error.message; showError(error); }));
   $('#moduleList').addEventListener('click', e => { const btn = e.target.closest('[data-module-action]'); if (btn) moduleAction(btn, btn.dataset.moduleAction).catch(showError); });
   $('#policyList').addEventListener('change', e => { if (e.target.dataset.policyField) updatePolicy(e.target).catch(showError); });
   $('#policyList').addEventListener('click', e => { const btn = e.target.closest('[data-policy-delete]'); if (btn) updatePolicy(btn).catch(showError); });
