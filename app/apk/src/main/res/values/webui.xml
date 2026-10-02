@@ -4,6 +4,9 @@
     <string name="webui_scan_hint">Scan the QR code with a phone on the same network to open the WebUI.</string>
     <string name="webui_running">Running on port %1$d</string>
     <string name="webui_stopped">WebUI is not running</string>
+    <string name="webui_listener_status">IPv4 %1$s · IPv6 %2$s</string>
+    <string name="webui_listener_on">ON</string>
+    <string name="webui_listener_off">OFF</string>
     <string name="webui_auth_none">No authentication</string>
     <string name="webui_auth_random">Random fixed token</string>
     <string name="webui_auth_custom">Custom token</string>
