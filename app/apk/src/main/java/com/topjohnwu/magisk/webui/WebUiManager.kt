@@ -43,6 +43,7 @@ object WebUiManager {
     private var ipv6Server: WebUiServer? = null
     private var ipv4Probe: Boolean? = null
     private var ipv6Probe: Boolean? = null
+    private var ipv4CoveredByIpv6Wildcard = false
     private var boundPort: Int? = null
     private var listenerErrors: List<String> = emptyList()
     private var appContext: Context? = null
@@ -188,6 +189,7 @@ object WebUiManager {
         boundPort = port
         ipv4Probe = null
         ipv6Probe = null
+        ipv4CoveredByIpv6Wildcard = false
 
         // Prefer one IPv6 wildcard socket. On the usual Android/Linux dual-stack setup this
         // socket also owns the IPv4 port; on IPV6_V6ONLY devices we add a separate IPv4 socket.
@@ -196,6 +198,9 @@ object WebUiManager {
         if (ipv6Server?.isAlive == true) {
             ipv6Probe = canConnectEventually(IPV6_LOOPBACK, port)
             ipv4Probe = canConnectEventually(IPV4_LOOPBACK, port)
+            if (ipv4Probe == true) {
+                ipv4CoveredByIpv6Wildcard = true
+            }
             if (ipv6Probe != true) {
                 errors += "IPv6 listener is bound but its local self-test did not answer"
             }
@@ -215,17 +220,16 @@ object WebUiManager {
             } else {
                 val error = ipv4Result.error
                 if (error != null && error.isAddressAlreadyInUse() && ipv6Server?.isAlive == true) {
-                    // Some Android kernels reserve the IPv4 port when :: is bound even before
-                    // an immediate IPv4 loopback probe succeeds. Preserve the valid IPv6 socket
-                    // and retry the IPv4 capability probe instead of tearing everything down.
+                    // An IPv6 wildcard socket that makes an explicit IPv4 wildcard bind fail
+                    // with EADDRINUSE owns the port at the kernel level. Some Android kernels
+                    // still reject an IPv4 loopback probe, so preserve bind ownership as the
+                    // authoritative listener state and keep the probe diagnostic-only.
+                    ipv4CoveredByIpv6Wildcard = true
                     ipv4Probe = canConnectEventually(
                         IPV4_LOOPBACK,
                         port,
                         attempts = SELF_TEST_ATTEMPTS + 2,
                     )
-                    if (ipv4Probe != true) {
-                        errors += "IPv4 port $port is already owned while the IPv6 listener is active"
-                    }
                 } else if (error != null) {
                     errors += formatListenerError("IPv4", error)
                 }
@@ -306,7 +310,7 @@ object WebUiManager {
     private fun activeFamiliesLocked(): Pair<Boolean, Boolean> {
         val ipv4Live = ipv4Server?.isAlive == true
         val ipv6Live = ipv6Server?.isAlive == true
-        val ipv4ViaIpv6 = ipv6Live && ipv4Probe == true
+        val ipv4ViaIpv6 = ipv6Live && ipv4CoveredByIpv6Wildcard
         return (ipv4Live || ipv4ViaIpv6) to ipv6Live
     }
 
@@ -323,6 +327,7 @@ object WebUiManager {
         }
         val localTest = when {
             ipv4Probe == true || ipv6Probe == true -> true
+            hasLiveServer() -> null
             ipv4Probe == false && ipv6Probe == false -> false
             else -> null
         }
@@ -367,6 +372,7 @@ object WebUiManager {
         ipv6Server = null
         ipv4Probe = null
         ipv6Probe = null
+        ipv4CoveredByIpv6Wildcard = false
         boundPort = null
         if (clearErrors) listenerErrors = emptyList()
     }
