@@ -25,6 +25,7 @@
     <div class="brand"><div class="brand-mark small">M</div><div><strong>Magisk for TV</strong><span>WebUI :18091</span></div></div>
     <nav id="nav">
       <button data-page="dashboard" class="active">概览</button>
+      <button data-page="install">安装与修补</button>
       <button data-page="modules">模块</button>
       <button data-page="superuser">超级用户</button>
       <button data-page="logs">日志</button>
@@ -41,6 +42,25 @@
     <section id="page-dashboard" class="page active">
       <div id="statusGrid" class="grid status-grid"></div>
       <div class="panel"><div class="panel-title"><h2>设备</h2></div><div id="deviceInfo" class="kv-grid"></div></div>
+    </section>
+
+    <section id="page-install" class="page">
+      <div class="grid install-grid">
+        <form id="moduleUploadForm" class="panel upload-panel">
+          <div class="panel-title"><div><h2>安装模块 ZIP</h2><p>上传 Magisk 模块 ZIP 后直接调用现有模块安装流程。</p></div></div>
+          <label>模块文件<input id="moduleUploadFile" name="file" type="file" accept=".zip,application/zip" required></label>
+          <p class="muted">需要 Magisk 已激活并拥有 Root。安装完成后通常需要重启。</p>
+          <button class="primary" type="submit">上传并安装模块</button>
+          <div id="moduleUploadState" class="operation-state"></div>
+        </form>
+        <form id="patchUploadForm" class="panel upload-panel">
+          <div class="panel-title"><div><h2>修补启动镜像</h2><p>上传 boot/init_boot 镜像、厂商 TAR 或支持的固件包，复用 Magisk Patch。</p></div></div>
+          <label>启动镜像<input id="patchUploadFile" name="file" type="file" accept=".img,.bin,.tar,.md5,.zip" required></label>
+          <p class="muted">支持 .img / .bin / .tar / .tar.md5 / .zip，最大 2 GiB。修补结果由 Magisk 写入设备下载目录。</p>
+          <button class="primary" type="submit">上传并修补</button>
+          <div id="patchUploadState" class="operation-state"></div>
+        </form>
+      </div>
     </section>
 
     <section id="page-modules" class="page">
