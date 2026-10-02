@@ -41,8 +41,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
@@ -68,6 +66,7 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.component.verticalScrollbar
 import com.topjohnwu.magisk.core.R as CoreR
 
@@ -97,7 +96,8 @@ fun DenyListScreen(
                 title = { Text(stringResource(CoreR.string.denylist)) },
                 navigationIcon = {
                     IconButton(
-                        onClick = onBack
+                        onClick = onBack,
+                        modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -109,6 +109,7 @@ fun DenyListScreen(
                     Box {
                         IconButton(
                             onClick = { showSortMenu = true },
+                            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Sort,
@@ -127,6 +128,7 @@ fun DenyListScreen(
                             )
                             sortOptions.forEach { (resId, sort) ->
                                 DropdownMenuItem(
+                                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
                                     text = { Text(stringResource(resId)) },
                                     trailingIcon = if (sortBy == sort) {
                                         { Icon(Icons.Default.Check, contentDescription = null) }
@@ -138,6 +140,7 @@ fun DenyListScreen(
                                 )
                             }
                             DropdownMenuItem(
+                                modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
                                 text = { Text(stringResource(CoreR.string.sort_reverse)) },
                                 trailingIcon = if (sortReverse) {
                                     { Icon(Icons.Default.Check, contentDescription = null) }
@@ -153,6 +156,7 @@ fun DenyListScreen(
                     Box {
                         IconButton(
                             onClick = { showFilterMenu = true },
+                            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Tune,
@@ -165,6 +169,7 @@ fun DenyListScreen(
                             offset = DpOffset(x = (-8).dp, y = 0.dp),
                         ) {
                             DropdownMenuItem(
+                                modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
                                 text = { Text(stringResource(CoreR.string.show_system_app)) },
                                 trailingIcon = if (showSystem) {
                                     { Icon(Icons.Default.Check, contentDescription = null) }
@@ -175,6 +180,7 @@ fun DenyListScreen(
                                 }
                             )
                             DropdownMenuItem(
+                                modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
                                 text = { Text(stringResource(CoreR.string.show_os_app)) },
                                 trailingIcon = if (showOS) {
                                     { Icon(Icons.Default.Check, contentDescription = null) }
@@ -200,7 +206,7 @@ fun DenyListScreen(
                 onQueryChange = viewModel::setQuery,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .padding(horizontal = 28.dp, vertical = 10.dp)
             )
 
             if (loading) {
@@ -225,8 +231,8 @@ fun DenyListScreen(
                         .fillMaxSize()
                         .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .verticalScrollbar(listState, contentPadding = PaddingValues(vertical = 8.dp)),
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    contentPadding = PaddingValues(horizontal = 28.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(
                         items = apps,
@@ -256,7 +262,7 @@ private fun SearchInput(
     TextField(
         value = query,
         onValueChange = onQueryChange,
-        modifier = modifier,
+        modifier = modifier.tvFocusFrame(shape = RoundedCornerShape(28.dp)),
         placeholder = { Text(stringResource(CoreR.string.hide_filter_hint)) },
         leadingIcon = {
             Icon(
@@ -267,7 +273,10 @@ private fun SearchInput(
         },
         trailingIcon = if (query.isNotEmpty()) {
             {
-                IconButton(onClick = { onQueryChange("") }) {
+                IconButton(
+                    onClick = { onQueryChange("") },
+                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
+                ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = null,
@@ -319,16 +328,17 @@ private fun DenyAppCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .tvFocusFrame(shape = RoundedCornerShape(18.dp))
                     .clickable(onClick = onToggleExpand)
-                    .padding(14.dp),
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
                     painter = rememberDrawablePainter(app.info.iconImage),
                     contentDescription = app.info.label,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(48.dp)
                 )
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(14.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = app.info.label,
@@ -341,14 +351,15 @@ private fun DenyAppCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(10.dp))
                 TriStateCheckbox(
                     state = when {
                         app.itemsChecked == 0 -> ToggleableState.Off
                         app.checkedPercent < 1f -> ToggleableState.Indeterminate
                         else -> ToggleableState.On
                     },
-                    onClick = onToggleAll
+                    onClick = onToggleAll,
+                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
                 )
             }
 
@@ -356,7 +367,7 @@ private fun DenyAppCard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 52.dp, bottom = 8.dp)
+                        .padding(start = 64.dp, end = 12.dp, bottom = 12.dp)
                 ) {
                     app.processes.forEach { proc ->
                         ProcessRow(
@@ -379,13 +390,14 @@ private fun ProcessRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(14.dp))
+            .tvFocusFrame(shape = RoundedCornerShape(14.dp))
             .toggleable(
                 value = proc.isEnabled,
                 role = Role.Checkbox,
                 onValueChange = { onToggle() }
             )
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
