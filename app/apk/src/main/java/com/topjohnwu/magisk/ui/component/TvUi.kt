@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 
 @Composable
 fun Modifier.tvFocusFrame(
@@ -26,22 +27,23 @@ fun Modifier.tvFocusFrame(
 
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (focused) 1.045f else 1f,
+        targetValue = if (focused) 1.065f else 1f,
         label = "tvFocusScale",
     )
     val borderColor = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent
     val backgroundColor = if (focused) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.38f)
+        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.48f)
     } else {
         Color.Transparent
     }
 
     return this
         .onFocusChanged { focused = it.hasFocus }
+        .zIndex(if (focused) 1f else 0f)
         .graphicsLayer {
             scaleX = scale
             scaleY = scale
         }
         .background(backgroundColor, shape)
-        .border(2.dp, borderColor, shape)
+        .border(if (focused) 3.dp else 2.dp, borderColor, shape)
 }
