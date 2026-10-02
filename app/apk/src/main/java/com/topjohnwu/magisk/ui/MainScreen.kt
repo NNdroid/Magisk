@@ -1,6 +1,7 @@
 package com.topjohnwu.magisk.ui
 
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -41,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -101,6 +103,7 @@ fun MainScreen(
         List(visibleTabs.size) { FocusRequester() }
     }
     var moduleFabAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var navigationRailHasFocus by remember { mutableStateOf(false) }
     val currentTab = visibleTabs[currentPage]
     val isModulesTab = currentTab == Tab.MODULES
     val modulesNavFocusRequester = visibleTabs.indexOf(Tab.MODULES)
@@ -109,6 +112,10 @@ fun MainScreen(
 
     LaunchedEffect(currentPage) {
         if (restoredPage != currentPage) restoredPage = currentPage
+        tabFocusRequesters.getOrNull(currentPage)?.requestFocus()
+    }
+
+    BackHandler(enabled = !navigationRailHasFocus) {
         tabFocusRequesters.getOrNull(currentPage)?.requestFocus()
     }
 
@@ -145,7 +152,9 @@ fun MainScreen(
         NavigationRail(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(176.dp),
+                .width(176.dp)
+                .onFocusChanged { navigationRailHasFocus = it.hasFocus }
+                .focusGroup(),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
             Spacer(Modifier.height(24.dp))
