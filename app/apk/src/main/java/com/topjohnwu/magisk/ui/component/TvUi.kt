@@ -1,6 +1,8 @@
 package com.topjohnwu.magisk.ui.component
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,21 +23,34 @@ import androidx.compose.ui.zIndex
 @Composable
 fun Modifier.tvFocusFrame(
     enabled: Boolean = true,
-    shape: Shape = RoundedCornerShape(16.dp),
+    shape: Shape = RoundedCornerShape(18.dp),
 ): Modifier {
     if (!enabled) return this
 
     var focused by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
-        targetValue = if (focused) 1.065f else 1f,
+        targetValue = if (focused) 1.03f else 1f,
+        animationSpec = tween(durationMillis = 120),
         label = "tvFocusScale",
     )
-    val borderColor = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent
-    val backgroundColor = if (focused) {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.48f)
-    } else {
-        Color.Transparent
-    }
+    val borderColor by animateColorAsState(
+        targetValue = if (focused) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            Color.Transparent
+        },
+        animationSpec = tween(durationMillis = 100),
+        label = "tvFocusBorder",
+    )
+    val backgroundColor by animateColorAsState(
+        targetValue = if (focused) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.34f)
+        } else {
+            Color.Transparent
+        },
+        animationSpec = tween(durationMillis = 100),
+        label = "tvFocusBackground",
+    )
 
     return this
         .onFocusChanged { focused = it.hasFocus }
@@ -45,5 +60,5 @@ fun Modifier.tvFocusFrame(
             scaleY = scale
         }
         .background(backgroundColor, shape)
-        .border(if (focused) 3.dp else 2.dp, borderColor, shape)
+        .border(2.dp, borderColor, shape)
 }
