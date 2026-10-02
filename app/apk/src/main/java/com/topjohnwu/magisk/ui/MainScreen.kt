@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -56,6 +57,7 @@ import com.topjohnwu.magisk.core.model.module.LocalModule
 import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.home.HomeScreen
 import com.topjohnwu.magisk.ui.home.HomeViewModel
+import com.topjohnwu.magisk.ui.home.WebUiCard
 import com.topjohnwu.magisk.ui.install.InstallViewModel
 import com.topjohnwu.magisk.ui.log.LogScreen
 import com.topjohnwu.magisk.ui.log.LogViewModel
@@ -223,7 +225,21 @@ fun MainScreen(
                         LaunchedEffect(currentTab) { vm.startLoading() }
                         CollectNavEvents(vm, navigator)
                         CollectNavEvents(installVm, navigator)
-                        HomeScreen(vm, installVm)
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            WebUiCard(
+                                modifier = Modifier.padding(
+                                    start = 28.dp,
+                                    top = 16.dp,
+                                    end = 28.dp,
+                                    bottom = 6.dp,
+                                ),
+                            )
+                            HomeScreen(
+                                viewModel = vm,
+                                installVm = installVm,
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                     Tab.SUPERUSER -> {
                         val activity = LocalActivity.current as? ComponentActivity

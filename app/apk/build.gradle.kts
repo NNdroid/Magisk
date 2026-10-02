@@ -37,6 +37,10 @@ dependencies {
     implementation(project(":core"))
     coreLibraryDesugaring(libs.jdk.libs)
 
+    // Embedded Android TV WebUI
+    implementation(libs.nanohttpd)
+    implementation(libs.zxing.core)
+
     // Compose
     implementation(libs.compose.ui)
     implementation(libs.accompanist.drawablepainter)

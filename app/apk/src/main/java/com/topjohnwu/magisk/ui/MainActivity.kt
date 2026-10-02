@@ -56,6 +56,7 @@ import com.topjohnwu.magisk.ui.navigation.Route
 import com.topjohnwu.magisk.ui.navigation.rememberNavigator
 import com.topjohnwu.magisk.ui.superuser.SuperuserDetailScreen
 import com.topjohnwu.magisk.ui.superuser.SuperuserViewModel
+import com.topjohnwu.magisk.webui.WebUiManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
@@ -98,6 +99,7 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
 
     @SuppressLint("InlinedApi")
     override fun onCreateUi(savedInstanceState: Bundle?) {
+        WebUiManager.start(applicationContext)
         showUnsupportedMessage()
 
         if (Config.checkUpdate) {

@@ -15,6 +15,8 @@ compose-m3 = "1.4.0"
 navigation3 = "1.1.7"
 navigationevent = "1.1.2"
 wire = "7.0.3"
+nanohttpd = "2.3.1"
+zxing = "3.5.4"
 
 [libraries]
 bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version = "1.86" }
@@ -28,6 +30,8 @@ okhttp-dnsoverhttps = { module = "com.squareup.okhttp3:okhttp-dnsoverhttps", ver
 okhttp-logging = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
 timber = { module = "com.jakewharton.timber:timber", version = "5.0.1" }
 xz = { module = "org.tukaani:xz", version = "1.12" }
+nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
+zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 
 # AndroidX
 activity = { module = "androidx.activity:activity", version = "1.13.0" }

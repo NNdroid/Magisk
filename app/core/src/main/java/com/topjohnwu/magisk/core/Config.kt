@@ -48,6 +48,14 @@ object Config : PreferenceConfig, DBConfig {
         const val DOH = "doh"
         const val RAND_NAME = "rand_name"
 
+        // Android TV WebUI
+        const val WEBUI_ENABLED = "tv_webui_enabled"
+        const val WEBUI_PORT = "tv_webui_port"
+        const val WEBUI_AUTH_MODE = "tv_webui_auth_mode"
+        const val WEBUI_RANDOM_TOKEN = "tv_webui_random_token"
+        const val WEBUI_CUSTOM_TOKEN = "tv_webui_custom_token"
+        const val WEBUI_THEME = "tv_webui_theme"
+
         val NO_MIGRATION = setOf(ASKED_HOME, SU_REQUEST_TIMEOUT,
             SU_AUTO_RESPONSE, SU_REAUTH, SU_TAPJACK)
     }
@@ -98,6 +106,16 @@ object Config : PreferenceConfig, DBConfig {
 
         // su timeout
         val TIMEOUT_LIST = longArrayOf(0, -1, 10, 20, 30, 60)
+
+        // Android TV WebUI authentication
+        const val WEBUI_AUTH_NONE = 0
+        const val WEBUI_AUTH_RANDOM_TOKEN = 1
+        const val WEBUI_AUTH_CUSTOM_TOKEN = 2
+
+        // Android TV WebUI theme
+        const val WEBUI_THEME_SYSTEM = 0
+        const val WEBUI_THEME_LIGHT = 1
+        const val WEBUI_THEME_DARK = 2
     }
 
     @JvmField var keepVerity = false
@@ -125,6 +143,14 @@ object Config : PreferenceConfig, DBConfig {
     var customChannelUrl by preference(Key.CUSTOM_CHANNEL, "")
     var downloadDir by preference(Key.DOWNLOAD_DIR, "")
     var randName by preference(Key.RAND_NAME, true)
+
+    var webUiEnabled by preference(Key.WEBUI_ENABLED, true)
+    var webUiPort by preference(Key.WEBUI_PORT, 18091)
+    var webUiAuthMode by preference(Key.WEBUI_AUTH_MODE, Value.WEBUI_AUTH_RANDOM_TOKEN)
+    var webUiRandomToken by preference(Key.WEBUI_RANDOM_TOKEN, "")
+    var webUiCustomToken by preference(Key.WEBUI_CUSTOM_TOKEN, "")
+    var webUiTheme by preference(Key.WEBUI_THEME, Value.WEBUI_THEME_SYSTEM)
+
     var checkUpdate
         get() = checkUpdatePrefs
         set(value) {

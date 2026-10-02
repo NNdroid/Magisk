@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webui_title">WebUI</string>
+    <string name="webui_scan_hint">使用同一局域网中的手机扫描二维码，即可直接打开 WebUI。</string>
+    <string name="webui_running">正在运行 · 端口 %1$d</string>
+    <string name="webui_stopped">WebUI 未运行</string>
+    <string name="webui_auth_none">无认证</string>
+    <string name="webui_auth_random">随机固定 Token</string>
+    <string name="webui_auth_custom">自定义 Token</string>
+    <string name="webui_no_lan_address">当前没有可用的局域网地址。</string>
+    <string name="webui_qr_description">打开 Magisk WebUI 的二维码</string>
+    <string name="webui_error">WebUI 错误：%1$s</string>
+</resources>

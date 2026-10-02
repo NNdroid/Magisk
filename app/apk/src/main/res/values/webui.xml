@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="webui_title">WebUI</string>
+    <string name="webui_scan_hint">Scan the QR code with a phone on the same network to open the WebUI.</string>
+    <string name="webui_running">Running on port %1$d</string>
+    <string name="webui_stopped">WebUI is not running</string>
+    <string name="webui_auth_none">No authentication</string>
+    <string name="webui_auth_random">Random fixed token</string>
+    <string name="webui_auth_custom">Custom token</string>
+    <string name="webui_no_lan_address">No LAN address is currently available.</string>
+    <string name="webui_qr_description">QR code for opening Magisk WebUI</string>
+    <string name="webui_error">WebUI error: %1$s</string>
+</resources>
