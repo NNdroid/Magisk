@@ -39,6 +39,8 @@ object Info {
 
     @JvmStatic var env = Env()
         private set
+    @JvmStatic var magiskInfo = MagiskInfo()
+        private set
     @JvmStatic var isSAR = false
         private set
     var legacySAR = false
@@ -85,20 +87,55 @@ object Info {
         val isActive = versionCode > 0
     }
 
+    class MagiskInfo(
+        val versionString: String = "",
+        val isDebug: Boolean = false,
+        code: Int = -1,
+    ) {
+        val versionCode = if (code > 0) code else -1
+        val isUnsupported = code > 0 && code < Const.Version.MIN_VERCODE
+        val isDetected = versionCode > 0
+    }
+
+    private fun detectMagisk(shell: Shell): MagiskInfo {
+        if (shell.isRoot) {
+            val rawVersion = fastCmd(shell, "magisk -v").trim()
+            val version = rawVersion.split(":")
+            val versionCode = fastCmd(shell, "magisk -V").trim().toIntOrNull() ?: -1
+            if (versionCode > 0) {
+                return MagiskInfo(
+                    version.firstOrNull().orEmpty(),
+                    version.getOrNull(2) == "D",
+                    versionCode,
+                )
+            }
+        }
+
+        // MagiskSU handles -v/-V locally and exits before connecting to the daemon or
+        // requesting root. This lets an untrusted/unsigned Manager still distinguish an
+        // installed Magisk core from a genuinely unrooted device.
+        val suVersion = fastCmd(shell, "su -v").trim()
+        if (!suVersion.endsWith(":MAGISKSU")) {
+            return MagiskInfo()
+        }
+        val versionCode = fastCmd(shell, "su -V").trim().toIntOrNull() ?: -1
+        return MagiskInfo(
+            versionString = suVersion.removeSuffix(":MAGISKSU"),
+            code = versionCode,
+        )
+    }
+
     fun init(shell: Shell) {
         // ShellInit normally sets this before calling us, but keep Env construction tied to
         // the actual shell being initialized instead of relying on mutable global ordering.
         isRooted = shell.isRoot
-        if (shell.isRoot) {
-            val rawVersion = fastCmd(shell, "magisk -v").trim()
-            val version = rawVersion.split(":")
-            val versionCode = runCatching {
-                fastCmd(shell, "magisk -V").trim().toInt()
-            }.getOrDefault(-1)
+        magiskInfo = detectMagisk(shell)
+
+        if (shell.isRoot && magiskInfo.isDetected) {
             env = Env(
-                version.firstOrNull().orEmpty(),
-                version.getOrNull(2) == "D",
-                versionCode,
+                magiskInfo.versionString,
+                magiskInfo.isDebug,
+                magiskInfo.versionCode,
                 active = true,
             )
             Config.denyList = fastCmdResult(shell, "magisk --denylist status")
