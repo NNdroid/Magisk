@@ -121,9 +121,21 @@ object WebUiManager {
 
     fun restart() {
         val context = synchronized(lock) {
-            // NanoHTTPD closes its server socket during stop(). Wait a short bounded interval
-            // before asking the already-running Service to bind again so Save cannot race the
-            // previous listener teardown and produce EADDRINUSE.
+            // Authentication/theme changes are read from Config on each request. If Save did
+            // not change the listening port, keep ownership of the existing socket and only
+            // refresh health/UI state. This removes the same-port EADDRINUSE window entirely.
+            if (
+                Config.webUiEnabled &&
+                hasLiveServer() &&
+                boundPort == Config.webUiPort
+            ) {
+                probeExistingServersLocked()
+                publishStateLocked()
+                return
+            }
+
+            // A port/enabled-state change really requires teardown. NanoHTTPD closes its
+            // server socket during stop(); wait a short bounded interval before rebinding.
             stopServersLocked()
             appContext
         }
