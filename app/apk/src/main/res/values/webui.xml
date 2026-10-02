@@ -7,6 +7,9 @@
     <string name="webui_listener_status">IPv4 %1$s · IPv6 %2$s</string>
     <string name="webui_listener_on">ON</string>
     <string name="webui_listener_off">OFF</string>
+    <string name="webui_self_test_ok">Local TCP self-test: OK</string>
+    <string name="webui_self_test_failed">Local TCP self-test: FAILED</string>
+    <string name="webui_self_test_pending">Local TCP self-test: checking…</string>
     <string name="webui_auth_none">No authentication</string>
     <string name="webui_auth_random">Random fixed token</string>
     <string name="webui_auth_custom">Custom token</string>
