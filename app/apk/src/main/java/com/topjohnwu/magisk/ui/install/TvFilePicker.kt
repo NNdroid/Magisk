@@ -261,7 +261,9 @@ fun TvFilePickerDialog(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(horizontal = 4.dp, bottom = 12.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .padding(bottom = 12.dp),
                 )
 
                 if (currentDirectory == null) {
