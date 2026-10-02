@@ -2,7 +2,7 @@
 
 # Magisk for Android TV
 
-[![Android TV Build](https://github.com/NNdroid/MagiskForAndroidTv/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/NNdroid/MagiskForAndroidTv/actions/workflows/build.yml)
+[![Android TV Build](https://github.com/NNdroid/MagiskForAndroidTV/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/NNdroid/MagiskForAndroidTV/actions/workflows/build.yml)
 [![Upstream](https://img.shields.io/badge/upstream-topjohnwu%2FMagisk-00AF9C)](https://github.com/topjohnwu/Magisk)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
@@ -29,6 +29,10 @@ The application UI is intentionally **TV-only**. The phone bottom navigation and
 - Optional Android system file picker fallback when one is installed
 - Browsing support for internal storage, Downloads, and detected USB/SD storage
 - Patch-file filtering for `.img`, `.bin`, `.tar`, `.tar.md5`, and `.zip`
+- Embedded **LAN WebUI** on port `18091`
+- Home-screen QR code for opening the WebUI directly from a phone
+- Configurable WebUI authentication and light/dark/system themes
+- Browser-based module installation and boot-image patching
 
 ## Magisk Features
 
@@ -62,6 +66,58 @@ Many Android TV firmware images do not ship with `DocumentsUI` or a conventional
 From **Install → Select and Patch a File**, the built-in picker can browse readable shared storage and removable media. On Android 11 and newer, direct filesystem browsing requires **All files access**. The app provides a TV-friendly entry to the appropriate Android settings screen when this permission is needed.
 
 If the TV has a compatible Android system file picker installed, it remains available as an optional fallback.
+
+## Embedded WebUI
+
+Magisk for Android TV includes an embedded LAN WebUI. The default address is:
+
+```text
+http://<TV-LAN-IP>:18091/
+```
+
+The TV **Home** page shows the current LAN address and a QR code. Scan that QR code from a phone or computer on the same network to open the WebUI directly.
+
+When token authentication is enabled, the QR code places the token in the URL fragment (`#token=...`). The fragment is consumed by the local WebUI frontend and is not sent as part of the HTTP request URL. API calls then use `Authorization: Bearer <token>`.
+
+### Authentication
+
+The WebUI authentication mode can be changed from the **WebUI** page itself:
+
+- **Random fixed token** — default and recommended. A cryptographically random token is generated once and persisted on the TV.
+- **Custom token** — supply your own token; at least 8 characters are required.
+- **No authentication** — intended only for trusted, isolated LANs. Anyone who can reach the TV's WebUI port can control Magisk in this mode.
+
+The current token can be copied from the WebUI. A random token can also be regenerated from the WebUI settings page.
+
+### Themes
+
+The WebUI supports three theme modes:
+
+- **Follow device/system** — follows the browser/device `prefers-color-scheme` setting.
+- **Light** — forces the daytime theme.
+- **Dark** — forces the nighttime theme.
+
+All WebUI HTML, CSS, and JavaScript assets are bundled inside the APK. No CDN or Internet connection is required when the phone/computer and TV can reach each other over the LAN.
+
+### WebUI Features
+
+The WebUI currently provides:
+
+- Magisk, Root, Zygisk, DenyList, Android, and device status
+- Browser upload and installation of Magisk module `.zip` files
+- Browser upload and patching of `.img`, `.bin`, `.tar`, `.tar.md5`, and `.zip` boot-image inputs
+- Module enable/disable, remove/restore, and `action.sh` execution
+- MagiskSU policy, notification, logging, and policy removal controls
+- SU log and Magisk log viewing and clearing
+- Common Magisk settings including Zygisk, DenyList, root mode, namespace mode, SU behavior, update checks, and DoH
+- WebUI authentication and theme configuration
+- Reboot, recovery, bootloader, download, and EDL power actions
+
+Browser uploads are limited to **2 GiB**. Uploaded data is copied into the application's private cache only while the operation is running and is deleted afterwards. Module installation reuses Magisk's existing `FlashZip` implementation; boot-image patching reuses `MagiskInstaller.Patch`.
+
+The patched image itself is written by Magisk to the device's configured download location, just as with the TV application's normal patch flow. The WebUI displays the installer/patcher output after the operation completes.
+
+> The WebUI controls privileged Magisk functionality. Keep token authentication enabled unless the network is fully trusted.
 
 ## Downloads and CI Artifacts
 
@@ -180,6 +236,7 @@ Relevant resources include:
 - `app/core/src/main/res/values/strings.xml`
 - `app/stub-res/src/main/res/values/strings.xml`
 - `app/apk/src/main/res/values/tv_file_picker.xml`
+- `app/apk/src/main/res/values/webui.xml`
 
 Translations should use the corresponding Android `values-[lang]` resource directories.
 
