@@ -6,12 +6,15 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.content.res.Resources
+import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -71,6 +74,17 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
     internal val showInvalidState = MutableStateFlow(false)
     internal val showUnsupported = MutableStateFlow<List<Pair<Int, Int>>>(emptyList())
 
+    private val requestLocalNetworkPermission = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            WebUiManager.start(applicationContext)
+        } else {
+            WebUiManager.reportError(getString(R.string.webui_local_network_permission_denied))
+        }
+        requestNotificationPermissionIfNeeded()
+    }
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base.wrap())
     }
@@ -99,14 +113,8 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
 
     @SuppressLint("InlinedApi")
     override fun onCreateUi(savedInstanceState: Bundle?) {
-        WebUiManager.start(applicationContext)
+        startWebUiWithPermissions()
         showUnsupportedMessage()
-
-        if (Config.checkUpdate) {
-            extension.withPermission(Manifest.permission.POST_NOTIFICATIONS) {
-                Config.checkUpdate = it
-            }
-        }
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
@@ -196,6 +204,33 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
                         },
                     )
                 }
+            }
+        }
+    }
+
+    @SuppressLint("InlinedApi")
+    private fun startWebUiWithPermissions() {
+        if (!Config.webUiEnabled) {
+            WebUiManager.start(applicationContext)
+            requestNotificationPermissionIfNeeded()
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= 37 &&
+            checkSelfPermission(Manifest.permission.ACCESS_LOCAL_NETWORK) != PackageManager.PERMISSION_GRANTED) {
+            requestLocalNetworkPermission.launch(Manifest.permission.ACCESS_LOCAL_NETWORK)
+            return
+        }
+
+        WebUiManager.start(applicationContext)
+        requestNotificationPermissionIfNeeded()
+    }
+
+    @SuppressLint("InlinedApi")
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Config.checkUpdate) {
+            extension.withPermission(Manifest.permission.POST_NOTIFICATIONS) {
+                Config.checkUpdate = it
             }
         }
     }
