@@ -29,6 +29,8 @@ def main() -> int:
     theme = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/MagiskTheme.kt")
     resource_theme = read("app/apk/src/main/res/values/themes.xml")
     log_screen = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/log/LogScreen.kt")
+    module_screen = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/module/ModuleScreen.kt")
+    tv_file_picker = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/install/TvFilePicker.kt")
     ci_prop = read(".github/ci.prop")
 
     require(manifest, 'android:name="android.software.leanback"', "manifest")
@@ -40,6 +42,8 @@ def main() -> int:
 
     require(main_screen, "NavigationRail(", "main screen")
     require(main_screen, ".tvFocusFrame(", "main screen")
+    require(main_screen, "BackHandler(enabled = !navigationRailHasFocus)", "main screen remote navigation")
+    require(main_screen, ".focusGroup()", "main screen remote navigation")
     forbid(main_screen, "ShortNavigationBar", "main screen")
     forbid(main_screen, "HorizontalPager", "main screen")
     forbid(main_screen, "isTelevision", "main screen")
@@ -55,13 +59,22 @@ def main() -> int:
     forbid(log_screen, "HorizontalPager", "log screen")
     forbid(log_screen, "rememberPagerState", "log screen")
 
+    require(module_screen, "TvFilePickerDialog(", "module TV file picker")
+    require(module_screen, "showLocalFilePicker", "module TV file picker")
+    require(module_screen, 'allowedExtensions = moduleExtensions', "module TV file picker")
+    require(tv_file_picker, "desiredEntryPath", "TV file picker focus restore")
+    require(tv_file_picker, "rootFocusIndex", "TV file picker focus restore")
+
     require(ci_prop, "abiList=arm64-v8a", "CI ABI configuration")
 
     print("Android TV fork contract: OK")
     print("- Leanback-only launcher")
     print("- landscape TV activity")
-    print("- TV navigation rail and focus UI")
+    print("- TV navigation rail and remote Back behavior")
+    print("- visible TV focus UI")
     print("- TV splash icon and dark handoff")
+    print("- built-in TV picker for patching and module installs")
+    print("- TV file picker focus restoration")
     print("- no phone pager/bottom navigation")
     print("- arm64-v8a CI build")
     return 0
