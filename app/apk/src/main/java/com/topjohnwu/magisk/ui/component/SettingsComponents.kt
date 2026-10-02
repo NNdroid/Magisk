@@ -24,12 +24,15 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -100,6 +103,8 @@ fun SettingsDropdown(
     onSelectedIndexChange: (Int) -> Unit
 ) {
     var showDialog by remember { mutableStateOf(false) }
+    val selectedFocusRequester = remember { FocusRequester() }
+    val focusIndex = if (items.isEmpty()) -1 else selectedIndex.coerceIn(items.indices)
 
     ListItem(
         headlineContent = { Text(title, style = MaterialTheme.typography.bodyLarge) },
@@ -115,11 +120,15 @@ fun SettingsDropdown(
     )
 
     if (showDialog) {
+        LaunchedEffect(focusIndex) {
+            if (focusIndex >= 0) {
+                runCatching { selectedFocusRequester.requestFocus() }
+            }
+        }
+
         MagiskDialog(
             onDismissRequest = { showDialog = false },
             title = title,
-            dismissText = stringResource(android.R.string.cancel),
-            onDismiss = { showDialog = false }
         ) {
             val scrollState = rememberScrollState()
             Column(
@@ -133,6 +142,13 @@ fun SettingsDropdown(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 4.dp, vertical = 3.dp)
+                            .then(
+                                if (index == focusIndex) {
+                                    Modifier.focusRequester(selectedFocusRequester)
+                                } else {
+                                    Modifier
+                                }
+                            )
                             .tvFocusFrame(shape = RoundedCornerShape(16.dp))
                             .selectable(
                                 selected = isSelected,
