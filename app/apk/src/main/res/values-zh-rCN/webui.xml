@@ -10,4 +10,5 @@
     <string name="webui_no_lan_address">当前没有可用的局域网地址。</string>
     <string name="webui_qr_description">打开 Magisk WebUI 的二维码</string>
     <string name="webui_error">WebUI 错误：%1$s</string>
+    <string name="webui_local_network_permission_denied">Android 17 上必须授予局域网权限，WebUI 才能接受局域网连接。</string>
 </resources>
