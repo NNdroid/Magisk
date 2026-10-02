@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tv_file_picker_title">选择要修补的镜像</string>
+    <string name="tv_file_picker_system">系统文件选择器</string>
+    <string name="tv_file_picker_storage_access_title">需要存储访问权限</string>
+    <string name="tv_file_picker_storage_access_message">Magisk 内置 TV 文件选择器需要访问共享存储，才能浏览启动镜像、OTA 包以及 USB 存储设备。</string>
+    <string name="tv_file_picker_grant_access">授予存储访问权限</string>
+    <string name="tv_file_picker_permission_unavailable">此电视系统没有可用的存储权限设置页面。</string>
+    <string name="tv_file_picker_internal_storage">内部存储</string>
+    <string name="tv_file_picker_downloads">下载</string>
+    <string name="tv_file_picker_removable_storage">USB / SD 存储</string>
+    <string name="tv_file_picker_up">返回上一级目录</string>
+    <string name="tv_file_picker_no_files">此目录中没有支持的镜像文件</string>
+    <string name="tv_file_picker_folder">文件夹</string>
+    <string name="tv_file_picker_supported_hint">支持：IMG、BIN、TAR、TAR.MD5 和 ZIP</string>
+</resources>

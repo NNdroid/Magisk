@@ -47,6 +47,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.drawablepainter.rememberDrawablePainter
+import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.component.verticalScrollbar
 import com.topjohnwu.magisk.ui.navigation.LocalNavigator
 import com.topjohnwu.magisk.ui.navigation.Route
@@ -120,10 +121,9 @@ fun SuperuserScreen(
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(padding)
                 .verticalScrollbar(listState, contentPadding = PaddingValues(vertical = 4.dp)),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { Spacer(Modifier.height(4.dp)) }
             items(
                 items = uiState.policies,
                 key = { "${it.policy.uid}_${it.packageName}" },
@@ -135,7 +135,6 @@ fun SuperuserScreen(
                     onDetail = { navigator.push(Route.SuperuserDetail(item.policy.uid)) },
                 )
             }
-            item { Spacer(Modifier.height(4.dp)) }
         }
     }
 }
@@ -151,8 +150,9 @@ private fun PolicyCard(
         onClick = onDetail,
         modifier = modifier
             .fillMaxWidth()
+            .tvFocusFrame(shape = RoundedCornerShape(22.dp))
             .alpha(if (item.isEnabled) 1f else 0.5f),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         ListItem(
@@ -160,7 +160,7 @@ private fun PolicyCard(
                 Image(
                     painter = rememberDrawablePainter(item.icon),
                     contentDescription = item.appName,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(48.dp)
                 )
             },
             headlineContent = {
@@ -171,7 +171,7 @@ private fun PolicyCard(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                     if (item.isSharedUid) {
-                        Spacer(Modifier.width(6.dp))
+                        Spacer(Modifier.width(8.dp))
                         SharedUidBadge()
                     }
                 }

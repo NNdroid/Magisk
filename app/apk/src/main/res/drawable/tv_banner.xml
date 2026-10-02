@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#101716" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+    <item
+        android:width="104dp"
+        android:height="104dp"
+        android:gravity="center"
+        android:drawable="@drawable/ic_magisk_padded" />
+</layer-list>

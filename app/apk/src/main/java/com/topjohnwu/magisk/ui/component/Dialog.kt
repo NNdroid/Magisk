@@ -44,6 +44,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
@@ -259,10 +261,10 @@ fun LoadingDialog(
                 shape = RoundedCornerShape(28.dp),
                 color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 tonalElevation = 6.dp,
-                modifier = modifier.widthIn(max = 320.dp)
+                modifier = modifier.widthIn(min = 420.dp, max = 560.dp)
             ) {
                 Box(
-                    modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                    modifier = Modifier.padding(28.dp).fillMaxWidth(),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     Row(
@@ -273,7 +275,7 @@ fun LoadingDialog(
                             color = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            modifier = Modifier.padding(start = 16.dp),
+                            modifier = Modifier.padding(start = 20.dp),
                             text = stringResource(R.string.loading),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -312,15 +314,15 @@ fun MagiskDialog(
             tonalElevation = 6.dp,
             modifier = modifier
                 .windowInsetsPadding(WindowInsets.systemBars)
-                .padding(horizontal = 24.dp, vertical = 24.dp)
-                .widthIn(min = 280.dp, max = 560.dp)
+                .padding(horizontal = 40.dp, vertical = 32.dp)
+                .widthIn(min = 480.dp, max = 760.dp)
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
                 title?.let {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 16.dp)
+                            .padding(start = 28.dp, end = 28.dp, top = 28.dp, bottom = 18.dp)
                     ) {
                         CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
                             ProvideTextStyle(MaterialTheme.typography.titleLarge) {
@@ -345,10 +347,10 @@ fun MagiskDialog(
                         } else Modifier
                     )
                     .padding(
-                        start = 24.dp,
-                        end = 24.dp,
-                        top = if (title == null) 24.dp else 0.dp,
-                        bottom = if (hasButtons) 0.dp else 24.dp
+                        start = 28.dp,
+                        end = 28.dp,
+                        top = if (title == null) 28.dp else 0.dp,
+                        bottom = if (hasButtons) 0.dp else 28.dp
                     )
                 Box(modifier = contentModifier) {
                     CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant) {
@@ -361,7 +363,7 @@ fun MagiskDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 24.dp, end = 24.dp, bottom = 24.dp, top = 16.dp),
+                            .padding(start = 28.dp, end = 28.dp, bottom = 28.dp, top = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (neutralButton != null) {
@@ -374,7 +376,7 @@ fun MagiskDialog(
                             dismissButton()
                         }
                         if (dismissButton != null && confirmButton != null) {
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(12.dp))
                         }
                         if (confirmButton != null) {
                             confirmButton()
@@ -403,6 +405,21 @@ fun MagiskDialog(
     scrollable: Boolean = false,
     content: @Composable () -> Unit,
 ) {
+    val hasConfirm = confirmText != null || onConfirm != null
+    val hasDismiss = dismissText != null || onDismiss != null
+    val hasNeutral = neutralText != null && onNeutral != null
+    val confirmFocusRequester = remember { FocusRequester() }
+    val dismissFocusRequester = remember { FocusRequester() }
+    val neutralFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(hasConfirm, hasDismiss, hasNeutral, confirmEnabled) {
+        when {
+            hasConfirm && confirmEnabled -> confirmFocusRequester.requestFocus()
+            hasDismiss -> dismissFocusRequester.requestFocus()
+            hasNeutral -> neutralFocusRequester.requestFocus()
+        }
+    }
+
     MagiskDialog(
         onDismissRequest = onDismissRequest,
         title = if (!title.isNullOrEmpty()) {
@@ -411,11 +428,14 @@ fun MagiskDialog(
         modifier = modifier,
         dismissOnClickOutside = dismissOnClickOutside,
         dismissOnBackPress = dismissOnBackPress,
-        confirmButton = if (confirmText != null || onConfirm != null) {
+        confirmButton = if (hasConfirm) {
             {
                 TextButton(
                     onClick = { onConfirm?.invoke() },
                     enabled = confirmEnabled,
+                    modifier = Modifier
+                        .focusRequester(confirmFocusRequester)
+                        .tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                 ) {
                     Text(
                         text = confirmText ?: stringResource(android.R.string.ok),
@@ -424,9 +444,14 @@ fun MagiskDialog(
                 }
             }
         } else null,
-        dismissButton = if (dismissText != null || onDismiss != null) {
+        dismissButton = if (hasDismiss) {
             {
-                TextButton(onClick = { onDismiss?.invoke() }) {
+                TextButton(
+                    onClick = { onDismiss?.invoke() },
+                    modifier = Modifier
+                        .focusRequester(dismissFocusRequester)
+                        .tvFocusFrame(shape = RoundedCornerShape(14.dp)),
+                ) {
                     Text(
                         text = dismissText ?: stringResource(android.R.string.cancel),
                         style = MaterialTheme.typography.labelLarge,
@@ -434,11 +459,16 @@ fun MagiskDialog(
                 }
             }
         } else null,
-        neutralButton = if (neutralText != null && onNeutral != null) {
+        neutralButton = if (hasNeutral) {
             {
-                TextButton(onClick = onNeutral) {
+                TextButton(
+                    onClick = { onNeutral?.invoke() },
+                    modifier = Modifier
+                        .focusRequester(neutralFocusRequester)
+                        .tvFocusFrame(shape = RoundedCornerShape(14.dp)),
+                ) {
                     Text(
-                        text = neutralText,
+                        text = neutralText!!,
                         style = MaterialTheme.typography.labelLarge,
                     )
                 }

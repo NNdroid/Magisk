@@ -80,6 +80,7 @@ import com.topjohnwu.magisk.ui.component.ConfirmResult
 import com.topjohnwu.magisk.ui.component.MagiskDialog
 import com.topjohnwu.magisk.ui.component.MarkdownTextAsync
 import com.topjohnwu.magisk.ui.component.rememberConfirmDialog
+import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.component.verticalScrollbar
 import com.topjohnwu.magisk.utils.textHolder
 import kotlinx.coroutines.launch
@@ -163,13 +164,14 @@ fun ModuleScreen(
             if (onRegisterFab == null) {
                 FloatingActionButton(
                     onClick = { filePicker.launch("application/zip") },
+                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(20.dp)),
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     content = {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = stringResource(CoreR.string.module_action_install_external),
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(32.dp),
                         )
                     },
                 )
@@ -198,13 +200,13 @@ fun ModuleScreen(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.padding(horizontal = 32.dp)
+                    modifier = Modifier.padding(horizontal = 40.dp)
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_module),
                         contentDescription = null,
                         tint = colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.size(64.dp)
+                        modifier = Modifier.size(72.dp)
                     )
                     Text(
                         text = stringResource(CoreR.string.module_empty),
@@ -224,11 +226,10 @@ fun ModuleScreen(
                 .fillMaxSize()
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(padding)
-                .verticalScrollbar(listState, contentPadding = PaddingValues(top = 4.dp, bottom = 80.dp)),
-            contentPadding = PaddingValues(start = 12.dp, top = 4.dp, end = 12.dp, bottom = 80.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .verticalScrollbar(listState, contentPadding = PaddingValues(top = 8.dp, bottom = 96.dp)),
+            contentPadding = PaddingValues(start = 28.dp, top = 12.dp, end = 28.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item { Spacer(Modifier.height(4.dp)) }
             items(
                 items = uiState.modules,
                 key = { it.module.id },
@@ -249,7 +250,6 @@ fun ModuleScreen(
                     }
                 )
             }
-            item { Spacer(Modifier.height(4.dp)) }
         }
     }
 }
@@ -270,28 +270,30 @@ private fun ModuleCard(
     Card(
         onClick = { expanded = !expanded },
         enabled = hasDescription,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .tvFocusFrame(shape = RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = colorScheme.surfaceContainerLow)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
             Column(modifier = Modifier.alpha(infoAlpha)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(end = 4.dp)
+                            .padding(end = 6.dp)
                     ) {
                         Text(
                             text = item.module.name,
                             style = MaterialTheme.typography.titleMedium,
                             textDecoration = strikeThrough,
                         )
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.height(3.dp))
                         Text(
                             text = stringResource(
                                 CoreR.string.module_version_author,
@@ -305,14 +307,15 @@ private fun ModuleCard(
                     }
                     Switch(
                         checked = item.isEnabled,
-                        onCheckedChange = { viewModel.toggleEnabled(item) }
+                        onCheckedChange = { viewModel.toggleEnabled(item) },
+                        modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                     )
                 }
 
                 if (hasDescription) {
                     Box(
                         modifier = Modifier
-                            .padding(top = 6.dp)
+                            .padding(top = 8.dp)
                             .animateContentSize(
                                 animationSpec = spring(
                                     dampingRatio = Spring.DampingRatioLowBouncy,
@@ -332,7 +335,7 @@ private fun ModuleCard(
                 }
 
                 if (item.showNotice) {
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         text = textHolder(item.noticeText),
                         style = MaterialTheme.typography.bodyMedium,
@@ -342,7 +345,7 @@ private fun ModuleCard(
                 }
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 AnimatedVisibility(
@@ -350,18 +353,19 @@ private fun ModuleCard(
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (item.showAction) {
                             FilledTonalButton(
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(16.dp)),
+                                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
                                 onClick = { viewModel.runAction(item.module.id, item.module.name) },
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
                                     Icon(
-                                        modifier = Modifier.size(18.dp),
+                                        modifier = Modifier.size(20.dp),
                                         imageVector = Icons.Default.PlayArrow,
                                         contentDescription = stringResource(CoreR.string.module_action)
                                     )
@@ -383,20 +387,22 @@ private fun ModuleCard(
                     exit = fadeOut()
                 ) {
                     FilledTonalButton(
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier
+                            .padding(end = 10.dp)
+                            .tvFocusFrame(shape = RoundedCornerShape(16.dp)),
                         colors = ButtonDefaults.filledTonalButtonColors(
                             containerColor = colorScheme.tertiaryContainer,
                             contentColor = colorScheme.onTertiaryContainer
                         ),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
                         onClick = { onUpdateClick(item.module.updateInfo) },
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             Icon(
-                                modifier = Modifier.size(18.dp),
+                                modifier = Modifier.size(20.dp),
                                 imageVector = Icons.Default.CloudUpload,
                                 contentDescription = stringResource(CoreR.string.update),
                             )
@@ -409,6 +415,7 @@ private fun ModuleCard(
                 }
 
                 FilledTonalButton(
+                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(16.dp)),
                     colors = if (item.isRemoved) {
                         ButtonDefaults.filledTonalButtonColors()
                     } else {
@@ -417,16 +424,16 @@ private fun ModuleCard(
                             contentColor = colorScheme.onErrorContainer
                         )
                     },
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
                     onClick = { viewModel.toggleRemove(item) },
                     enabled = !item.isUpdated
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         Icon(
-                            modifier = Modifier.size(18.dp),
+                            modifier = Modifier.size(20.dp),
                             imageVector = if (item.isRemoved) Icons.AutoMirrored.Filled.Undo else Icons.Default.Delete,
                             contentDescription = null
                         )

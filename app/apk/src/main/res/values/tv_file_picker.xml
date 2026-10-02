@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tv_file_picker_title">Select image to patch</string>
+    <string name="tv_file_picker_system">System picker</string>
+    <string name="tv_file_picker_storage_access_title">Storage access required</string>
+    <string name="tv_file_picker_storage_access_message">Magisk\'s TV file picker needs access to shared storage to browse boot images, OTA packages, and USB drives.</string>
+    <string name="tv_file_picker_grant_access">Grant storage access</string>
+    <string name="tv_file_picker_permission_unavailable">Storage permission settings are not available on this TV.</string>
+    <string name="tv_file_picker_internal_storage">Internal storage</string>
+    <string name="tv_file_picker_downloads">Downloads</string>
+    <string name="tv_file_picker_removable_storage">USB / SD storage</string>
+    <string name="tv_file_picker_up">Up one folder</string>
+    <string name="tv_file_picker_no_files">No supported image files in this folder</string>
+    <string name="tv_file_picker_folder">Folder</string>
+    <string name="tv_file_picker_supported_hint">Supported: IMG, BIN, TAR, TAR.MD5 and ZIP</string>
+</resources>

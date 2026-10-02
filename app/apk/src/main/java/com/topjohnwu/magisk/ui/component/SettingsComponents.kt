@@ -6,11 +6,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -46,9 +48,18 @@ fun SettingsArrow(
         headlineContent = { Text(title, style = MaterialTheme.typography.bodyLarge) },
         supportingContent = summary?.let { { Text(it, style = MaterialTheme.typography.bodyMedium) } },
         leadingContent = leadingContent,
-        trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
+        trailingContent = {
+            Icon(
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+            )
+        },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = modifier.clickable(onClick = onClick)
+        modifier = modifier
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .tvFocusFrame(shape = RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick)
     )
 }
 
@@ -66,12 +77,15 @@ fun SettingsSwitch(
         supportingContent = summary?.takeIf { it.isNotEmpty() }?.let { { Text(it, style = MaterialTheme.typography.bodyMedium) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = modifier.toggleable(
-            value = checked,
-            enabled = enabled,
-            role = Role.Switch,
-            onValueChange = onCheckedChange
-        )
+        modifier = modifier
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .tvFocusFrame(shape = RoundedCornerShape(18.dp))
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = onCheckedChange
+            )
     )
 }
 
@@ -94,7 +108,10 @@ fun SettingsDropdown(
             if (currentSummary.isNotEmpty()) Text(currentSummary, style = MaterialTheme.typography.bodyMedium)
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = modifier.clickable(enabled = enabled, onClick = { showDialog = true })
+        modifier = modifier
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+            .tvFocusFrame(shape = RoundedCornerShape(18.dp))
+            .clickable(enabled = enabled, onClick = { showDialog = true })
     )
 
     if (showDialog) {
@@ -115,6 +132,8 @@ fun SettingsDropdown(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 3.dp)
+                            .tvFocusFrame(shape = RoundedCornerShape(16.dp))
                             .selectable(
                                 selected = isSelected,
                                 onClick = {
@@ -123,7 +142,7 @@ fun SettingsDropdown(
                                 },
                                 role = Role.RadioButton
                             )
-                            .padding(vertical = 12.dp),
+                            .padding(horizontal = 12.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
@@ -150,9 +169,9 @@ fun SmallTitle(
 ) {
     Text(
         text = text,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.titleSmall,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+        modifier = modifier.padding(start = 20.dp, top = 12.dp, bottom = 10.dp)
     )
 }

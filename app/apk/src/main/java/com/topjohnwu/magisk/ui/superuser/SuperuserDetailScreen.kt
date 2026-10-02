@@ -47,6 +47,7 @@ import com.google.accompanist.drawablepainter.rememberDrawablePainter
 import com.topjohnwu.magisk.ui.component.ConfirmResult
 import com.topjohnwu.magisk.ui.component.SettingsSwitch
 import com.topjohnwu.magisk.ui.component.rememberConfirmDialog
+import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.component.verticalScrollbar
 import kotlinx.coroutines.launch
 import com.topjohnwu.magisk.core.R as CoreR
@@ -89,7 +90,8 @@ fun SuperuserDetailScreen(
                 title = { Text(stringResource(CoreR.string.settings)) },
                 navigationIcon = {
                     IconButton(
-                        onClick = onBack
+                        onClick = onBack,
+                        modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -122,8 +124,8 @@ fun SuperuserDetailScreen(
                 .padding(padding)
                 .verticalScrollbar(scrollState, contentPadding = PaddingValues(vertical = 12.dp))
                 .verticalScroll(scrollState)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 28.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -131,15 +133,15 @@ fun SuperuserDetailScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
             ) {
                 Row(
-                    modifier = Modifier.padding(18.dp),
+                    modifier = Modifier.padding(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Image(
                         painter = rememberDrawablePainter(item.icon),
                         contentDescription = item.appName,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(56.dp)
                     )
-                    Spacer(Modifier.width(16.dp))
+                    Spacer(Modifier.width(18.dp))
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
@@ -152,7 +154,7 @@ fun SuperuserDetailScreen(
                                 SharedUidBadge()
                             }
                         }
-                        Spacer(Modifier.height(2.dp))
+                        Spacer(Modifier.height(4.dp))
                         Text(
                             text = item.packageName,
                             style = MaterialTheme.typography.bodyMedium,
@@ -227,12 +229,14 @@ private fun RevokeButton(
         ),
         shape = ButtonDefaults.shape,
         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier
+            .fillMaxWidth()
+            .tvFocusFrame(shape = RoundedCornerShape(18.dp))
     ) {
         Icon(
             imageVector = Icons.Default.Cancel,
             contentDescription = null,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(20.dp)
         )
         Spacer(Modifier.width(8.dp))
         Text(

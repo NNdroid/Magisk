@@ -2,6 +2,7 @@ package com.topjohnwu.magisk.ui.module
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topjohnwu.magisk.R
 import com.topjohnwu.magisk.ui.component.rememberExternalStoragePermissionLauncher
+import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.terminal.TerminalScreen
 import com.topjohnwu.magisk.core.R as CoreR
 
@@ -45,7 +47,8 @@ fun ActionScreen(
                 title = { Text(actionName) },
                 navigationIcon = {
                     IconButton(
-                        onClick = onBack
+                        onClick = onBack,
+                        modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -56,7 +59,8 @@ fun ActionScreen(
                 actions = {
                     if (finished) {
                         IconButton(
-                            onClick = saveLog
+                            onClick = saveLog,
+                            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_save),

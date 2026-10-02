@@ -23,7 +23,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalResources
-import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -40,7 +39,6 @@ import com.topjohnwu.magisk.core.Info
 import com.topjohnwu.magisk.core.base.ActivityExtension
 import com.topjohnwu.magisk.core.base.SplashController
 import com.topjohnwu.magisk.core.base.SplashScreenHost
-import com.topjohnwu.magisk.core.isRunningAsStub
 import com.topjohnwu.magisk.core.ktx.toast
 import com.topjohnwu.magisk.core.tasks.AppMigration
 import com.topjohnwu.magisk.core.wrap
@@ -58,7 +56,6 @@ import com.topjohnwu.magisk.ui.navigation.Route
 import com.topjohnwu.magisk.ui.navigation.rememberNavigator
 import com.topjohnwu.magisk.ui.superuser.SuperuserDetailScreen
 import com.topjohnwu.magisk.ui.superuser.SuperuserViewModel
-import com.topjohnwu.magisk.view.Shortcuts
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
@@ -72,7 +69,6 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
     private val intentState = MutableStateFlow(0)
     internal val showInvalidState = MutableStateFlow(false)
     internal val showUnsupported = MutableStateFlow<List<Pair<Int, Int>>>(emptyList())
-    internal val showShortcutPrompt = MutableStateFlow(false)
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base.wrap())
@@ -103,7 +99,6 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
     @SuppressLint("InlinedApi")
     override fun onCreateUi(savedInstanceState: Bundle?) {
         showUnsupportedMessage()
-        askForHomeShortcut()
 
         if (Config.checkUpdate) {
             extension.withPermission(Manifest.permission.POST_NOTIFICATIONS) {
@@ -193,18 +188,10 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
                     MainActivityDialogs(
                         showInvalid = showInvalidState.collectAsStateWithLifecycle().value,
                         unsupportedMessages = showUnsupported.collectAsStateWithLifecycle().value,
-                        showShortcut = showShortcutPrompt.collectAsStateWithLifecycle().value,
                         onInvalidConfirmed = {
                             showInvalidState.value = false
                             handleInvalidStateInstall()
                         },
-                        onShortcutConfirmed = {
-                            showShortcutPrompt.value = false
-                            Shortcuts.addHomeIcon(this@MainActivity)
-                        },
-                        onShortcutDismissed = {
-                            showShortcutPrompt.value = false
-                        }
                     )
                 }
             }
@@ -290,25 +277,13 @@ class MainActivity : ComponentActivity(), SplashScreenHost {
             showUnsupported.value = messages
         }
     }
-
-    private fun askForHomeShortcut() {
-        if (isRunningAsStub && !Config.askedHome &&
-            ShortcutManagerCompat.isRequestPinShortcutSupported(this)) {
-            Config.askedHome = true
-            showShortcutPrompt.value = true
-        }
-    }
 }
 
 @Composable
 private fun MainActivityDialogs(
     showInvalid: Boolean,
     unsupportedMessages: List<Pair<Int, Int>>,
-    showShortcut: Boolean,
     onInvalidConfirmed: () -> Unit,
-    onShortcutConfirmed: () -> Unit,
-    onShortcutDismissed: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     val resources = LocalResources.current
     val invalidDialog = rememberConfirmDialog(
@@ -339,20 +314,6 @@ private fun MainActivityDialogs(
             unsupportedDialog.showConfirm(
                 title = resources.getString(titleRes),
                 content = resources.getString(msgRes),
-            )
-        }
-    }
-
-    val shortcutDialog = rememberConfirmDialog(
-        onConfirm = onShortcutConfirmed,
-        onDismiss = onShortcutDismissed
-    )
-
-    LaunchedEffect(showShortcut) {
-        if (showShortcut) {
-            shortcutDialog.showConfirm(
-                title = resources.getString(CoreR.string.add_shortcut_title),
-                content = resources.getString(CoreR.string.add_shortcut_msg),
             )
         }
     }

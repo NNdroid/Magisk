@@ -92,6 +92,7 @@ import com.topjohnwu.magisk.ui.MainActivity
 import com.topjohnwu.magisk.ui.component.MagiskDialog
 import com.topjohnwu.magisk.ui.component.MarkdownTextAsync
 import com.topjohnwu.magisk.ui.component.rememberLoadingDialog
+import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.component.verticalScrollbar
 import com.topjohnwu.magisk.ui.flash.FlashUtils
 import com.topjohnwu.magisk.ui.install.InstallDialog
@@ -254,7 +255,10 @@ fun HomeScreen(
                 scrollBehavior = scrollBehavior,
                 actions = {
                     if (Info.env.isActive) {
-                        IconButton(onClick = { viewModel.onDeletePressed() }) {
+                        IconButton(
+                            onClick = { viewModel.onDeletePressed() },
+                            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = stringResource(CoreR.string.uninstall_magisk_title),
@@ -275,8 +279,8 @@ fun HomeScreen(
                 .padding(padding)
                 .verticalScrollbar(scrollState, contentPadding = PaddingValues(vertical = 12.dp))
                 .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(horizontal = 28.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (uiState.isNoticeVisible) {
                 NoticeCard(onHide = viewModel::hideNotice)
@@ -363,6 +367,7 @@ private fun RebootButton(
     Box(modifier = modifier) {
         IconButton(
             onClick = { showMenu = true },
+            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
         ) {
             Icon(
                 imageVector = Icons.Default.PowerSettingsNew,
@@ -384,6 +389,7 @@ private fun RebootButton(
                     )
                 }
                 DropdownMenuItem(
+                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
                     text = {
                         Text(
                             text = stringResource(item.labelRes),
@@ -394,7 +400,7 @@ private fun RebootButton(
                         Icon(
                             imageVector = item.icon,
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(22.dp)
                         )
                     },
                     trailingIcon = if (isSafeMode && safeModeEnabled >= 2) {
@@ -403,7 +409,7 @@ private fun RebootButton(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     } else null,
@@ -430,7 +436,7 @@ private fun NoticeCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
     ) {
         Row(
-            modifier = Modifier.padding(start = 16.dp, top = 6.dp, bottom = 6.dp, end = 6.dp),
+            modifier = Modifier.padding(start = 18.dp, top = 8.dp, bottom = 8.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -441,11 +447,14 @@ private fun NoticeCard(
                     .weight(1f)
                     .padding(vertical = 6.dp)
             )
-            IconButton(onClick = onHide) {
+            IconButton(
+                onClick = onHide,
+                modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(12.dp)),
+            ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(CoreR.string.hide),
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(20.dp),
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
@@ -460,6 +469,7 @@ private fun InstallButton(
     modifier: Modifier = Modifier,
     isPrimary: Boolean = false,
 ) {
+    val buttonModifier = modifier.tvFocusFrame(shape = RoundedCornerShape(16.dp))
     val buttonContent = @Composable {
         Icon(
             painter = painterResource(R.drawable.ic_download),
@@ -477,7 +487,7 @@ private fun InstallButton(
         Button(
             onClick = onClick,
             contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-            modifier = modifier,
+            modifier = buttonModifier,
         ) {
             buttonContent()
         }
@@ -485,7 +495,7 @@ private fun InstallButton(
         FilledTonalButton(
             onClick = onClick,
             contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-            modifier = modifier,
+            modifier = buttonModifier,
         ) {
             buttonContent()
         }
@@ -515,7 +525,7 @@ private fun CoreCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -527,9 +537,9 @@ private fun CoreCard(
                     painter = painterResource(CoreR.drawable.ic_magisk_outline),
                     contentDescription = null,
                     tint = if (isInstalled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(48.dp)
+                    modifier = Modifier.size(52.dp)
                 )
-                Spacer(Modifier.width(16.dp))
+                Spacer(Modifier.width(18.dp))
                 Column {
                     Text(
                         text = stringResource(CoreR.string.magisk),
@@ -562,7 +572,6 @@ private fun CoreCard(
     }
 }
 
-
 @Composable
 private fun AppCard(
     state: HomeViewModel.State,
@@ -588,7 +597,7 @@ private fun AppCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp)
+                .padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -600,9 +609,9 @@ private fun AppCard(
                         painter = painterResource(R.drawable.ic_manager),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(52.dp)
                     )
-                    Spacer(Modifier.width(16.dp))
+                    Spacer(Modifier.width(18.dp))
                     Text(
                         text = stringResource(CoreR.string.home_app_title),
                         style = MaterialTheme.typography.titleLarge
@@ -612,19 +621,22 @@ private fun AppCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (Info.env.isActive) {
                         val hideRestoreIcon = if (isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                        IconButton(onClick = onHideRestorePressed) {
+                        IconButton(
+                            onClick = onHideRestorePressed,
+                            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
+                        ) {
                             Icon(
                                 imageVector = hideRestoreIcon,
                                 contentDescription = stringResource(
                                     if (isHidden) CoreR.string.settings_restore_app_title else CoreR.string.settings_hide_app_title
                                 ),
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(22.dp),
                             )
                         }
                     }
 
                     if (actionLabel != null) {
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(8.dp))
                         InstallButton(
                             label = actionLabel,
                             onClick = onManagerPressed,
@@ -633,7 +645,7 @@ private fun AppCard(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
             if (state != HomeViewModel.State.LOADING) {
                 AppDetailRow(label = stringResource(CoreR.string.home_latest_version), value = remoteVersion)
@@ -642,7 +654,7 @@ private fun AppCard(
             AppDetailRow(label = stringResource(CoreR.string.home_package), value = LocalContext.current.packageName)
 
             if (progress in 1..99) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 LinearProgressIndicator(
                     progress = { progress / 100f },
                     modifier = Modifier.fillMaxWidth()
@@ -661,7 +673,7 @@ private fun AppDetailRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 5.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
@@ -709,7 +721,7 @@ private fun StatusCard(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(16.dp),
+                        .padding(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -728,7 +740,7 @@ private fun StatusCard(
                 if (index < statuses.lastIndex) {
                     VerticalDivider(
                         thickness = 0.5.dp,
-                        modifier = Modifier.padding(vertical = 12.dp),
+                        modifier = Modifier.padding(vertical = 14.dp),
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                 }
@@ -747,20 +759,21 @@ private fun SupportCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Text(
                 text = stringResource(CoreR.string.home_support_content),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilledTonalButton(
                     onClick = { onLinkClicked(Const.Url.PATREON_URL) },
+                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(16.dp)),
                     contentPadding = ButtonDefaults.ButtonWithIconContentPadding
                 ) {
                     Icon(
@@ -776,6 +789,7 @@ private fun SupportCard(
                 }
                 FilledTonalButton(
                     onClick = { onLinkClicked("https://paypal.me/magiskdonate") },
+                    modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(16.dp)),
                     contentPadding = ButtonDefaults.ButtonWithIconContentPadding
                 ) {
                     Icon(
@@ -836,7 +850,7 @@ private fun DevelopersCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -845,14 +859,17 @@ private fun DevelopersCard(
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         dev.links.forEach { link ->
-                            IconButton(onClick = { onLinkClicked(link.url) }) {
+                            IconButton(
+                                onClick = { onLinkClicked(link.url) },
+                                modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
+                            ) {
                                 Icon(
                                     painter = painterResource(link.icon),
                                     contentDescription = stringResource(link.label),
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(26.dp)
                                 )
                             }
                         }
@@ -861,7 +878,7 @@ private fun DevelopersCard(
                 if (index < developers.lastIndex) {
                     HorizontalDivider(
                         thickness = 0.5.dp,
-                        modifier = Modifier.padding(horizontal = 18.dp),
+                        modifier = Modifier.padding(horizontal = 20.dp),
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     )
                 }
@@ -970,7 +987,9 @@ private fun HideAppDialog(
             OutlinedTextField(
                 value = appName,
                 onValueChange = { appName = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                 label = { Text(stringResource(CoreR.string.settings_app_name_hint)) },
                 isError = isError
             )

@@ -2,6 +2,7 @@ package com.topjohnwu.magisk.ui.flash
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -16,9 +17,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topjohnwu.magisk.R
 import com.topjohnwu.magisk.ui.component.rememberExternalStoragePermissionLauncher
+import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.terminal.TerminalScreen
 import com.topjohnwu.magisk.core.R as CoreR
 
@@ -50,7 +53,8 @@ fun FlashScreen(
                 title = { Text("${stringResource(CoreR.string.flash_screen_title)} - $statusText") },
                 navigationIcon = {
                     IconButton(
-                        onClick = onBack
+                        onClick = onBack,
+                        modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -61,7 +65,8 @@ fun FlashScreen(
                 actions = {
                     if (finished) {
                         IconButton(
-                            onClick = saveLog
+                            onClick = saveLog,
+                            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_save),
@@ -71,7 +76,8 @@ fun FlashScreen(
                     }
                     if (flashState == FlashViewModel.State.SUCCESS && showReboot) {
                         IconButton(
-                            onClick = { viewModel.restartPressed() }
+                            onClick = { viewModel.restartPressed() },
+                            modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(14.dp)),
                         ) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_restart),
