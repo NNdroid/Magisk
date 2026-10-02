@@ -63,6 +63,11 @@ internal fun WebUiCard(
     } else {
         stringResource(R.string.webui_listener_off)
     }
+    val selfTestText = when (state.localSelfTest) {
+        true -> stringResource(R.string.webui_self_test_ok)
+        false -> stringResource(R.string.webui_self_test_failed)
+        null -> stringResource(R.string.webui_self_test_pending)
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -119,6 +124,15 @@ internal fun WebUiCard(
                             MaterialTheme.colorScheme.onSecondaryContainer
                         } else {
                             MaterialTheme.colorScheme.error
+                        },
+                    )
+                    Text(
+                        text = selfTestText,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = when (state.localSelfTest) {
+                            true -> MaterialTheme.colorScheme.primary
+                            false -> MaterialTheme.colorScheme.error
+                            null -> MaterialTheme.colorScheme.onSecondaryContainer
                         },
                     )
                     Text(
