@@ -27,6 +27,7 @@ def main() -> int:
     manifest = read("app/apk/src/main/AndroidManifest.xml")
     main_screen = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/MainScreen.kt")
     theme = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/MagiskTheme.kt")
+    resource_theme = read("app/apk/src/main/res/values/themes.xml")
     log_screen = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/log/LogScreen.kt")
     ci_prop = read(".github/ci.prop")
 
@@ -46,6 +47,11 @@ def main() -> int:
     require(theme, "typography = MagiskTvTypography", "theme")
     forbid(theme, "if (tv)", "theme")
 
+    require(resource_theme, 'style name="SplashTheme" parent="Theme.SplashScreen.IconBackground"', "TV splash theme")
+    require(resource_theme, '<item name="windowSplashScreenAnimatedIcon">@drawable/ic_magisk</item>', "TV splash theme")
+    require(resource_theme, '<item name="windowSplashScreenBackground">#101716</item>', "TV splash theme")
+    require(resource_theme, '<item name="postSplashScreenTheme">@style/Main</item>', "TV splash theme")
+
     forbid(log_screen, "HorizontalPager", "log screen")
     forbid(log_screen, "rememberPagerState", "log screen")
 
@@ -55,6 +61,7 @@ def main() -> int:
     print("- Leanback-only launcher")
     print("- landscape TV activity")
     print("- TV navigation rail and focus UI")
+    print("- TV splash icon and dark handoff")
     print("- no phone pager/bottom navigation")
     print("- arm64-v8a CI build")
     return 0
