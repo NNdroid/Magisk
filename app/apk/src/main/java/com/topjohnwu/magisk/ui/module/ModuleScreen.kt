@@ -1,6 +1,10 @@
 package com.topjohnwu.magisk.ui.module
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.net.Uri
 import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -69,6 +73,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topjohnwu.magisk.R
 import com.topjohnwu.magisk.core.Info
@@ -82,6 +87,7 @@ import com.topjohnwu.magisk.ui.component.MarkdownTextAsync
 import com.topjohnwu.magisk.ui.component.rememberConfirmDialog
 import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.component.verticalScrollbar
+import com.topjohnwu.magisk.ui.install.TvFilePickerDialog
 import com.topjohnwu.magisk.utils.textHolder
 import kotlinx.coroutines.launch
 import com.topjohnwu.magisk.core.R as CoreR
@@ -103,33 +109,74 @@ fun ModuleScreen(
 
     val localInstallDialog = rememberConfirmDialog()
     val confirmInstallTitle = stringResource(CoreR.string.confirm_install_title)
+    val modulePickerTitle = stringResource(CoreR.string.module_action_install_external)
+    val moduleExtensions = remember { setOf(".zip") }
 
     var pendingOnlineModule by remember { mutableStateOf<OnlineModule?>(null) }
     var showOnlineDialog by rememberSaveable { mutableStateOf(false) }
+    var showLocalFilePicker by rememberSaveable { mutableStateOf(false) }
 
-    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    fun confirmLocalModule(uri: Uri, displayName: String) {
+        scope.launch {
+            val result = localInstallDialog.awaitConfirm(
+                title = confirmInstallTitle,
+                content = resources.getString(CoreR.string.confirm_install, displayName),
+            )
+            if (result == ConfirmResult.Confirmed) {
+                viewModel.confirmLocalInstall(uri)
+            }
+        }
+    }
+
+    val systemFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             val displayName = context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                 if (cursor.moveToFirst() && idx >= 0) cursor.getString(idx) else null
             } ?: uri.lastPathSegment ?: "module.zip"
-            scope.launch {
-                val result = localInstallDialog.awaitConfirm(
-                    title = confirmInstallTitle,
-                    content = resources.getString(CoreR.string.confirm_install, displayName),
-                )
-                if (result == ConfirmResult.Confirmed) {
-                    viewModel.confirmLocalInstall(uri)
-                }
-            }
+            confirmLocalModule(uri, displayName)
+        } else {
+            showLocalFilePicker = true
         }
+    }
+    val systemPickerAvailable = remember(context) {
+        Intent(Intent.ACTION_GET_CONTENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/zip"
+        }.resolveActivity(context.packageManager) != null
+    }
+    val openSystemPicker: () -> Unit = {
+        showLocalFilePicker = false
+        try {
+            systemFilePicker.launch("application/zip")
+        } catch (_: ActivityNotFoundException) {
+            showLocalFilePicker = true
+            Toast.makeText(context, CoreR.string.app_not_found, Toast.LENGTH_LONG).show()
+        }
+    }
+    val openLocalPicker: () -> Unit = {
+        showLocalFilePicker = true
     }
 
     DisposableEffect(onRegisterFab) {
-        onRegisterFab?.invoke { filePicker.launch("application/zip") }
+        onRegisterFab?.invoke(openLocalPicker)
         onDispose {
             onRegisterFab?.invoke(null)
         }
+    }
+
+    if (showLocalFilePicker) {
+        TvFilePickerDialog(
+            onDismiss = { showLocalFilePicker = false },
+            onFileSelected = { file ->
+                showLocalFilePicker = false
+                confirmLocalModule(file.toUri(), file.name)
+            },
+            systemPickerAvailable = systemPickerAvailable,
+            onOpenSystemPicker = openSystemPicker,
+            title = modulePickerTitle,
+            allowedExtensions = moduleExtensions,
+        )
     }
 
     if (showOnlineDialog && pendingOnlineModule != null) {
@@ -163,7 +210,7 @@ fun ModuleScreen(
         floatingActionButton = {
             if (onRegisterFab == null) {
                 FloatingActionButton(
-                    onClick = { filePicker.launch("application/zip") },
+                    onClick = openLocalPicker,
                     modifier = Modifier.tvFocusFrame(shape = RoundedCornerShape(20.dp)),
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
