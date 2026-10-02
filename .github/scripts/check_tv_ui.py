@@ -34,6 +34,7 @@ def main() -> int:
     config = read("app/core/src/main/java/com/topjohnwu/magisk/core/Config.kt")
     webui_manager = read("app/apk/src/main/java/com/topjohnwu/magisk/webui/WebUiManager.kt")
     webui_server = read("app/apk/src/main/java/com/topjohnwu/magisk/webui/WebUiServer.kt")
+    webui_installer = read("app/apk/src/main/java/com/topjohnwu/magisk/webui/WebUiInstaller.kt")
     webui_html = read("app/apk/src/main/assets/webui/index.html")
     webui_css = read("app/apk/src/main/assets/webui/app.css")
     webui_js = read("app/apk/src/main/assets/webui/app.js")
@@ -79,9 +80,16 @@ def main() -> int:
     require(config, "WEBUI_THEME_DARK", "WebUI theme modes")
     require(webui_manager, '"$base/#token=${Uri.encode(token)}"', "WebUI QR token fragment")
     require(webui_server, 'authorization.startsWith("Bearer "', "WebUI bearer auth")
+    require(webui_server, 'path == "/api/install/module"', "WebUI module upload API")
+    require(webui_server, 'path == "/api/install/patch"', "WebUI patch upload API")
+    require(webui_installer, "FlashZip(Uri.fromFile(upload.file)", "WebUI module installer reuse")
+    require(webui_installer, "MagiskInstaller.Patch(Uri.fromFile(upload.file)", "WebUI patch installer reuse")
+    require(webui_html, 'data-page="install"', "WebUI install page")
     require(webui_html, 'data-page="webui"', "WebUI settings page")
     require(webui_css, 'data-theme="dark"', "WebUI dark theme")
     require(webui_js, "setTheme(data.theme)", "WebUI runtime theme")
+    require(webui_js, "'/api/install/module'", "WebUI module upload frontend")
+    require(webui_js, "'/api/install/patch'", "WebUI patch upload frontend")
 
     require(ci_prop, "abiList=arm64-v8a", "CI ABI configuration")
 
@@ -96,6 +104,7 @@ def main() -> int:
     print("- WebUI Home QR entry on port 18091")
     print("- WebUI random-token secure default")
     print("- WebUI system/light/dark themes")
+    print("- WebUI browser module installation and image patching")
     print("- no phone pager/bottom navigation")
     print("- arm64-v8a CI build")
     return 0
