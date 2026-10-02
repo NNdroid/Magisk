@@ -48,7 +48,9 @@ fun SettingsArrow(
         leadingContent = leadingContent,
         trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = modifier.clickable(onClick = onClick)
+        modifier = modifier
+            .tvFocusFrame()
+            .clickable(onClick = onClick)
     )
 }
 
@@ -66,12 +68,14 @@ fun SettingsSwitch(
         supportingContent = summary?.takeIf { it.isNotEmpty() }?.let { { Text(it, style = MaterialTheme.typography.bodyMedium) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = null, enabled = enabled) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = modifier.toggleable(
-            value = checked,
-            enabled = enabled,
-            role = Role.Switch,
-            onValueChange = onCheckedChange
-        )
+        modifier = modifier
+            .tvFocusFrame()
+            .toggleable(
+                value = checked,
+                enabled = enabled,
+                role = Role.Switch,
+                onValueChange = onCheckedChange
+            )
     )
 }
 
@@ -94,7 +98,9 @@ fun SettingsDropdown(
             if (currentSummary.isNotEmpty()) Text(currentSummary, style = MaterialTheme.typography.bodyMedium)
         },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        modifier = modifier.clickable(enabled = enabled, onClick = { showDialog = true })
+        modifier = modifier
+            .tvFocusFrame()
+            .clickable(enabled = enabled, onClick = { showDialog = true })
     )
 
     if (showDialog) {
@@ -115,6 +121,7 @@ fun SettingsDropdown(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .tvFocusFrame()
                             .selectable(
                                 selected = isSelected,
                                 onClick = {
