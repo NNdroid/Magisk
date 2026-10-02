@@ -31,7 +31,6 @@ import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeTonalSpot
 import com.topjohnwu.magisk.core.Config
 import com.topjohnwu.magisk.core.model.ColorMode
-import com.topjohnwu.magisk.ui.component.isTelevision
 
 @SuppressLint("RestrictedApi")
 fun dynamicColorScheme(
@@ -102,98 +101,83 @@ object ThemeState {
 }
 
 val MagiskShapes = Shapes(
-    extraSmall = RoundedCornerShape(6.dp),
-    small = RoundedCornerShape(10.dp),
-    medium = RoundedCornerShape(16.dp),
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(18.dp),
     large = RoundedCornerShape(24.dp),
     extraLarge = RoundedCornerShape(32.dp),
 )
 
-val MagiskTypography = Typography(
+val MagiskTvTypography = Typography(
     headlineLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
+        fontSize = 36.sp,
+        lineHeight = 44.sp,
         letterSpacing = (-0.25).sp,
     ),
     headlineMedium = TextStyle(
         fontWeight = FontWeight.SemiBold,
+        fontSize = 32.sp,
+        lineHeight = 40.sp,
+    ),
+    headlineSmall = TextStyle(
+        fontWeight = FontWeight.SemiBold,
         fontSize = 28.sp,
         lineHeight = 36.sp,
     ),
-    headlineSmall = TextStyle(
+    titleLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
         fontSize = 24.sp,
         lineHeight = 32.sp,
     ),
-    titleLarge = TextStyle(
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 20.sp,
-        lineHeight = 26.sp,
-    ),
     titleMedium = TextStyle(
         fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
+        fontSize = 20.sp,
+        lineHeight = 28.sp,
         letterSpacing = 0.15.sp,
     ),
     titleSmall = TextStyle(
         fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
         letterSpacing = 0.1.sp,
     ),
     bodyLarge = TextStyle(
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
+        fontSize = 18.sp,
+        lineHeight = 28.sp,
         letterSpacing = 0.5.sp,
     ),
     bodyMedium = TextStyle(
         fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
         letterSpacing = 0.25.sp,
     ),
     bodySmall = TextStyle(
         fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.4.sp,
     ),
     labelLarge = TextStyle(
         fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
+        fontSize = 16.sp,
+        lineHeight = 22.sp,
         letterSpacing = 0.1.sp,
     ),
     labelMedium = TextStyle(
         fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
         letterSpacing = 0.5.sp,
     ),
     labelSmall = TextStyle(
         fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 16.sp,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
         letterSpacing = 0.5.sp,
     ),
-)
-
-val MagiskTvTypography = MagiskTypography.copy(
-    headlineLarge = MagiskTypography.headlineLarge.copy(fontSize = 36.sp, lineHeight = 44.sp),
-    headlineMedium = MagiskTypography.headlineMedium.copy(fontSize = 32.sp, lineHeight = 40.sp),
-    headlineSmall = MagiskTypography.headlineSmall.copy(fontSize = 28.sp, lineHeight = 36.sp),
-    titleLarge = MagiskTypography.titleLarge.copy(fontSize = 24.sp, lineHeight = 32.sp),
-    titleMedium = MagiskTypography.titleMedium.copy(fontSize = 20.sp, lineHeight = 28.sp),
-    titleSmall = MagiskTypography.titleSmall.copy(fontSize = 18.sp, lineHeight = 24.sp),
-    bodyLarge = MagiskTypography.bodyLarge.copy(fontSize = 18.sp, lineHeight = 28.sp),
-    bodyMedium = MagiskTypography.bodyMedium.copy(fontSize = 16.sp, lineHeight = 24.sp),
-    bodySmall = MagiskTypography.bodySmall.copy(fontSize = 14.sp, lineHeight = 20.sp),
-    labelLarge = MagiskTypography.labelLarge.copy(fontSize = 16.sp, lineHeight = 22.sp),
-    labelMedium = MagiskTypography.labelMedium.copy(fontSize = 14.sp, lineHeight = 20.sp),
-    labelSmall = MagiskTypography.labelSmall.copy(fontSize = 13.sp, lineHeight = 18.sp),
 )
 
 @Composable
@@ -203,7 +187,6 @@ fun MagiskTheme(
     val isDark = isSystemInDarkTheme()
     val mode = ColorMode.fromValue(ThemeState.colorMode)
     val context = LocalContext.current
-    val tv = isTelevision()
 
     val isDarkTheme = mode.isDark(isDark)
     val useDynamicColor = mode.isMonet && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -229,7 +212,7 @@ fun MagiskTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         shapes = MagiskShapes,
-        typography = if (tv) MagiskTvTypography else MagiskTypography,
+        typography = MagiskTvTypography,
         content = content
     )
 }
