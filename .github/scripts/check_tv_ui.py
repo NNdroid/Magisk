@@ -31,6 +31,12 @@ def main() -> int:
     log_screen = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/log/LogScreen.kt")
     module_screen = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/module/ModuleScreen.kt")
     tv_file_picker = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/install/TvFilePicker.kt")
+    config = read("app/core/src/main/java/com/topjohnwu/magisk/core/Config.kt")
+    webui_manager = read("app/apk/src/main/java/com/topjohnwu/magisk/webui/WebUiManager.kt")
+    webui_server = read("app/apk/src/main/java/com/topjohnwu/magisk/webui/WebUiServer.kt")
+    webui_html = read("app/apk/src/main/assets/webui/index.html")
+    webui_css = read("app/apk/src/main/assets/webui/app.css")
+    webui_js = read("app/apk/src/main/assets/webui/app.js")
     ci_prop = read(".github/ci.prop")
 
     require(manifest, 'android:name="android.software.leanback"', "manifest")
@@ -44,6 +50,7 @@ def main() -> int:
     require(main_screen, ".tvFocusFrame(", "main screen")
     require(main_screen, "BackHandler(enabled = !navigationRailHasFocus)", "main screen remote navigation")
     require(main_screen, ".focusGroup()", "main screen remote navigation")
+    require(main_screen, "WebUiCard(", "Home WebUI QR entry")
     forbid(main_screen, "ShortNavigationBar", "main screen")
     forbid(main_screen, "HorizontalPager", "main screen")
     forbid(main_screen, "isTelevision", "main screen")
@@ -65,6 +72,17 @@ def main() -> int:
     require(tv_file_picker, "desiredEntryPath", "TV file picker focus restore")
     require(tv_file_picker, "rootFocusIndex", "TV file picker focus restore")
 
+    require(config, "var webUiPort by preference(Key.WEBUI_PORT, 18091)", "WebUI default port")
+    require(config, "var webUiAuthMode by preference(Key.WEBUI_AUTH_MODE, Value.WEBUI_AUTH_RANDOM_TOKEN)", "WebUI secure default")
+    require(config, "WEBUI_THEME_SYSTEM", "WebUI theme modes")
+    require(config, "WEBUI_THEME_LIGHT", "WebUI theme modes")
+    require(config, "WEBUI_THEME_DARK", "WebUI theme modes")
+    require(webui_manager, '"$base/#token=${Uri.encode(token)}"', "WebUI QR token fragment")
+    require(webui_server, 'authorization.startsWith("Bearer "', "WebUI bearer auth")
+    require(webui_html, 'data-page="webui"', "WebUI settings page")
+    require(webui_css, 'data-theme="dark"', "WebUI dark theme")
+    require(webui_js, "setTheme(data.theme)", "WebUI runtime theme")
+
     require(ci_prop, "abiList=arm64-v8a", "CI ABI configuration")
 
     print("Android TV fork contract: OK")
@@ -75,6 +93,9 @@ def main() -> int:
     print("- TV splash icon and dark handoff")
     print("- built-in TV picker for patching and module installs")
     print("- TV file picker focus restoration")
+    print("- WebUI Home QR entry on port 18091")
+    print("- WebUI random-token secure default")
+    print("- WebUI system/light/dark themes")
     print("- no phone pager/bottom navigation")
     print("- arm64-v8a CI build")
     return 0
