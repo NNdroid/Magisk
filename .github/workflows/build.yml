@@ -93,13 +93,14 @@ jobs:
               echo "### APK signing"
               echo
               echo "Custom JKS signing: **enabled**."
+              echo "Both debug and release APKs will use the configured JKS."
               echo "The keystore and generated signing config are stored only in the runner temporary directory."
             } >> "$GITHUB_STEP_SUMMARY"
           else
             {
               echo "### APK signing"
               echo
-              echo "Custom JKS signing secrets are not configured; using the project's default debug signing key."
+              echo "Custom JKS signing secrets are not configured; debug and release APKs use the project's default debug signing key."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
@@ -111,10 +112,41 @@ jobs:
             echo "### APK signing"
             echo
             echo "Pull request builds intentionally do not receive custom JKS signing secrets."
+            echo "Debug and release APKs use the project's default debug signing key."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Build arm64 artifacts
+      - name: Build arm64 debug artifacts
         run: python build.py -v -c "$RUNNER_TEMP/ci-build.prop" all
+
+      - name: Build arm64 release native binaries
+        run: python build.py -v -r -c "$RUNNER_TEMP/ci-build.prop" native
+
+      - name: Build arm64 release APK
+        run: python build.py -v -r -c "$RUNNER_TEMP/ci-build.prop" app
+
+      - name: Verify APK variants
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            out/app-debug.apk
+            out/stub-debug.apk
+            out/app-release.apk
+            out/stub-release.apk
+          )
+          for file in "${required[@]}"; do
+            [[ -s "$file" ]] || { echo "Missing expected APK: $file" >&2; exit 1; }
+          done
+          ls -lh out/*.apk
+          {
+            echo "### APK variants"
+            echo
+            echo "Artifact contains:"
+            echo "- app-debug.apk"
+            echo "- stub-debug.apk"
+            echo "- app-release.apk"
+            echo "- stub-release.apk"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove temporary signing material
         if: ${{ always() }}
