@@ -74,10 +74,6 @@ object WebUiManager {
                 ipv4Server = null
             }
 
-            // Start IPv6 second. Some Android kernels expose an IPv6 wildcard socket as
-            // dual-stack and reject a second same-port listener after IPv4 is bound. In
-            // that case IPv4 remains the reliable baseline and the failure is diagnostic
-            // only; it must never take the working IPv4 listener down.
             ipv6StartError = null
             runCatching {
                 createBoundServer(context.applicationContext, InetAddress.getByName("::"))
@@ -191,7 +187,7 @@ object WebUiManager {
             val ok = runCatching {
                 Socket().use { socket ->
                     socket.connect(
-                        InetSocketAddress(InetAddress.getLoopbackAddress(), Config.webUiPort),
+                        InetSocketAddress(InetAddress.getByName("127.0.0.1"), Config.webUiPort),
                         SELF_TEST_TIMEOUT_MS,
                     )
                     socket.isConnected
