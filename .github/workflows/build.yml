@@ -63,8 +63,66 @@ jobs:
         with:
           is-asset-build: true
 
+      - name: Prepare CI build config
+        shell: bash
+        run: cp .github/ci.prop "$RUNNER_TEMP/ci-build.prop"
+
+      - name: Configure custom JKS signing
+        if: ${{ github.event_name != 'pull_request' }}
+        shell: bash
+        env:
+          TV_SIGNING_JKS_BASE64: ${{ secrets.TV_SIGNING_JKS_BASE64 }}
+          TV_SIGNING_STORE_PASSWORD: ${{ secrets.TV_SIGNING_STORE_PASSWORD }}
+          TV_SIGNING_KEY_ALIAS: ${{ secrets.TV_SIGNING_KEY_ALIAS }}
+          TV_SIGNING_KEY_PASSWORD: ${{ secrets.TV_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          python .github/scripts/configure_signing.py \
+            --config "$RUNNER_TEMP/ci-build.prop" \
+            --keystore "$RUNNER_TEMP/magisk-tv-release.jks"
+
+          if [[ -s "$RUNNER_TEMP/magisk-tv-release.jks" ]]; then
+            keytool -list \
+              -keystore "$RUNNER_TEMP/magisk-tv-release.jks" \
+              -storepass "$TV_SIGNING_STORE_PASSWORD" \
+              -alias "$TV_SIGNING_KEY_ALIAS" \
+              >/dev/null
+
+            {
+              echo "### APK signing"
+              echo
+              echo "Custom JKS signing: **enabled**."
+              echo "The keystore and generated signing config are stored only in the runner temporary directory."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### APK signing"
+              echo
+              echo "Custom JKS signing secrets are not configured; using the project's default debug signing key."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Note PR signing policy
+        if: ${{ github.event_name == 'pull_request' }}
+        shell: bash
+        run: |
+          {
+            echo "### APK signing"
+            echo
+            echo "Pull request builds intentionally do not receive custom JKS signing secrets."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Build arm64 artifacts
-        run: python build.py -v -c .github/ci.prop all
+        run: python build.py -v -c "$RUNNER_TEMP/ci-build.prop" all
+
+      - name: Remove temporary signing material
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          rm -f \
+            "$RUNNER_TEMP/magisk-tv-release.jks" \
+            "$RUNNER_TEMP/ci-build.prop"
 
       - name: Stop Gradle daemon
         if: ${{ always() }}
