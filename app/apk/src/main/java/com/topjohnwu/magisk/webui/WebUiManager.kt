@@ -47,6 +47,24 @@ object WebUiManager {
     val state: StateFlow<WebUiState> = _state.asStateFlow()
 
     fun start(context: Context) {
+        // Activity/application callers only request service ownership. The listener itself
+        // is created when WebUiService calls back with its Service instance, allowing the
+        // WebUI to outlive MainActivity and remain available after the TV UI is closed.
+        if (context !is WebUiService) {
+            appContext = context.applicationContext
+            if (!Config.webUiEnabled) {
+                WebUiService.stop(context.applicationContext)
+                stop()
+                return
+            }
+            runCatching {
+                WebUiService.start(context.applicationContext)
+            }.onFailure { error ->
+                reportError(error.message ?: error.javaClass.simpleName)
+            }
+            return
+        }
+
         synchronized(lock) {
             appContext = context.applicationContext
             if (!Config.webUiEnabled) {
@@ -132,9 +150,15 @@ object WebUiManager {
     }
 
     fun restart() {
-        synchronized(lock) {
+        val context = synchronized(lock) {
             stopServersLocked()
-            appContext?.let(::start) ?: publishState()
+            appContext
+        }
+        if (context != null) {
+            runCatching { WebUiService.start(context) }
+                .onFailure { error -> reportError(error.message ?: error.javaClass.simpleName) }
+        } else {
+            publishState()
         }
     }
 
