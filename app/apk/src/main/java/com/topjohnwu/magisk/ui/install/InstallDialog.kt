@@ -1,6 +1,9 @@
 package com.topjohnwu.magisk.ui.install
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,9 +69,31 @@ fun InstallDialog(
     modifier: Modifier = Modifier
 ) {
     val installUiState by installVm.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var showDownloadDialog by rememberSaveable { mutableStateOf(false) }
-    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { installVm.onPatchFileSelected(it) }
+    var showTvFilePicker by rememberSaveable { mutableStateOf(false) }
+
+    val systemFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            installVm.onPatchFileSelected(uri)
+        } else {
+            showTvFilePicker = true
+        }
+    }
+    val systemPickerAvailable = remember(context) {
+        Intent(Intent.ACTION_GET_CONTENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "*/*"
+        }.resolveActivity(context.packageManager) != null
+    }
+    val openSystemPicker: () -> Unit = {
+        showTvFilePicker = false
+        try {
+            systemFilePicker.launch("*/*")
+        } catch (_: ActivityNotFoundException) {
+            showTvFilePicker = true
+            Toast.makeText(context, CoreR.string.app_not_found, Toast.LENGTH_LONG).show()
+        }
     }
 
     val secondSlotDialog = rememberConfirmDialog()
@@ -76,7 +102,7 @@ fun InstallDialog(
 
     LaunchedEffect(installUiState.requestFilePicker) {
         if (installUiState.requestFilePicker) {
-            filePicker.launch("*/*")
+            showTvFilePicker = true
             installVm.onFilePickerConsumed()
         }
     }
@@ -96,6 +122,18 @@ fun InstallDialog(
             showDownloadDialog = true
             installVm.onDownloadDialogConsumed()
         }
+    }
+
+    if (showTvFilePicker) {
+        TvFilePickerDialog(
+            onDismiss = { showTvFilePicker = false },
+            onFileSelected = { file ->
+                showTvFilePicker = false
+                installVm.onPatchFileSelected(file.toUri())
+            },
+            systemPickerAvailable = systemPickerAvailable,
+            onOpenSystemPicker = openSystemPicker,
+        )
     }
 
     if (showDownloadDialog) {
