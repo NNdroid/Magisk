@@ -54,6 +54,10 @@ internal class WebUiServer(
                 path == "/api/status" && session.method == Method.GET -> json(statusJson())
                 path == "/api/config" && session.method == Method.GET -> json(webUiConfigJson(includeToken = true))
                 path == "/api/config" && session.method == Method.POST -> updateWebUiConfig(session)
+                path == "/api/install/module" && session.method == Method.POST ->
+                    installResponse(WebUiInstaller.installModule(context, session))
+                path == "/api/install/patch" && session.method == Method.POST ->
+                    installResponse(WebUiInstaller.patchImage(context, session))
                 path == "/api/modules" && session.method == Method.GET -> modulesJson()
                 path.startsWith("/api/modules/") -> moduleAction(path, session)
                 path == "/api/superuser" && session.method == Method.GET -> superuserJson()
@@ -154,6 +158,9 @@ internal class WebUiServer(
         onConfigChanged()
         return json(JSONObject().put("ok", true).put("config", webUiConfigJson(includeToken = true)))
     }
+
+    private fun installResponse(result: WebUiInstaller.Result): Response =
+        json(result.body, result.status)
 
     private fun modulesJson(): Response = runBlocking(Dispatchers.IO) {
         val modules = if (Info.env.isActive && LocalModule.loaded()) LocalModule.installed() else emptyList()
