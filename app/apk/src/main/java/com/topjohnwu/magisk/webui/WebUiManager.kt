@@ -37,7 +37,9 @@ object WebUiManager {
     private val random = SecureRandom()
     private var ipv4Server: WebUiServer? = null
     private var ipv6Server: WebUiServer? = null
-    private var ipv6StartError: String? = null
+    private var ipv4Probe: Boolean? = null
+    private var ipv6Probe: Boolean? = null
+    private var listenerErrors: List<String> = emptyList()
     private var appContext: Context? = null
     private var selfTestGeneration = 0L
 
@@ -55,12 +57,33 @@ object WebUiManager {
             ensureRandomToken()
             if (hasLiveServer()) {
                 publishState()
+                scheduleFamilySelfTests()
                 return
             }
 
             stopServersLocked()
             val errors = mutableListOf<String>()
 
+            // Bind IPv6 first. On Android/Linux this can either create an IPv6-only
+            // listener or a dual-stack listener that also accepts IPv4-mapped clients.
+            // Starting it first allows us to detect both cases instead of accidentally
+            // preventing a dual-stack socket by occupying the port with IPv4 first.
+            runCatching {
+                createBoundServer(context.applicationContext, InetAddress.getByName("::"))
+                    .also { server ->
+                        server.start(5_000, false)
+                        check(server.isAlive) { "IPv6 listener did not stay alive" }
+                        ipv6Server = server
+                    }
+            }.onFailure { error ->
+                errors += "IPv6: ${error.message ?: error.javaClass.simpleName}"
+                ipv6Server?.stop()
+                ipv6Server = null
+            }
+
+            // Always attempt an explicit IPv4 listener as well. If the IPv6 socket is
+            // already dual-stack this can legitimately fail with EADDRINUSE; the IPv4
+            // loopback probe below then detects that IPv4 is still being served.
             runCatching {
                 createBoundServer(context.applicationContext, InetAddress.getByName("0.0.0.0"))
                     .also { server ->
@@ -74,21 +97,7 @@ object WebUiManager {
                 ipv4Server = null
             }
 
-            ipv6StartError = null
-            runCatching {
-                createBoundServer(context.applicationContext, InetAddress.getByName("::"))
-                    .also { server ->
-                        server.start(5_000, false)
-                        check(server.isAlive) { "IPv6 listener did not stay alive" }
-                        ipv6Server = server
-                    }
-            }.onFailure { error ->
-                ipv6StartError = error.message ?: error.javaClass.simpleName
-                ipv6Server?.stop()
-                ipv6Server = null
-                errors += "IPv6: $ipv6StartError"
-            }
-
+            listenerErrors = errors
             if (!hasLiveServer()) {
                 _state.value = WebUiState(
                     running = false,
@@ -98,7 +107,7 @@ object WebUiManager {
                 )
             } else {
                 publishState()
-                scheduleLocalSelfTest()
+                scheduleFamilySelfTests()
             }
         }
     }
@@ -152,50 +161,59 @@ object WebUiManager {
     }
 
     fun currentAccessUrl(): String? {
-        val ipv4 = ipv4Server?.isAlive == true
-        val ipv6 = ipv6Server?.isAlive == true
+        val (ipv4, ipv6) = activeFamilies()
         return buildAccessUrl(lanUrls(Config.webUiPort, ipv4, ipv6).firstOrNull())
     }
 
     internal fun publishState() {
-        val ipv4 = ipv4Server?.isAlive == true
-        val ipv6 = ipv6Server?.isAlive == true
-        val urls = if (ipv4 || ipv6) {
+        val (ipv4, ipv6) = activeFamilies()
+        val running = hasLiveServer()
+        val urls = if (running) {
             lanUrls(Config.webUiPort, ipv4, ipv6)
         } else {
             emptyList()
         }
-        val previousSelfTest = _state.value.localSelfTest
+        val localTest = when {
+            ipv4Probe != null -> ipv4Probe
+            ipv6Probe != null -> ipv6Probe
+            else -> null
+        }
         _state.value = WebUiState(
-            running = ipv4 || ipv6,
+            running = running,
             urls = urls,
             accessUrl = buildAccessUrl(urls.firstOrNull()),
             authMode = Config.webUiAuthMode,
             themeMode = Config.webUiTheme,
             ipv4Listening = ipv4,
             ipv6Listening = ipv6,
-            localSelfTest = if (ipv4) previousSelfTest else null,
-            error = if (ipv4 || ipv6) null else ipv6StartError,
+            localSelfTest = localTest,
+            error = if (running) null else listenerErrors.joinToString("; ").ifBlank { null },
         )
     }
 
-    private fun scheduleLocalSelfTest() {
-        if (ipv4Server?.isAlive != true) return
+    private fun activeFamilies(): Pair<Boolean, Boolean> {
+        // A successful probe is authoritative. Before the asynchronous probes complete,
+        // use the explicit listener that we know was successfully bound as the initial
+        // capability estimate.
+        val ipv4 = ipv4Probe ?: (ipv4Server?.isAlive == true)
+        val ipv6 = ipv6Probe ?: (ipv6Server?.isAlive == true)
+        return ipv4 to ipv6
+    }
+
+    private fun scheduleFamilySelfTests() {
+        if (!hasLiveServer()) return
         val generation = ++selfTestGeneration
-        _state.value = _state.value.copy(localSelfTest = null)
+        ipv4Probe = null
+        ipv6Probe = null
+        publishState()
         Thread({
-            val ok = runCatching {
-                Socket().use { socket ->
-                    socket.connect(
-                        InetSocketAddress(InetAddress.getByName("127.0.0.1"), Config.webUiPort),
-                        SELF_TEST_TIMEOUT_MS,
-                    )
-                    socket.isConnected
-                }
-            }.getOrDefault(false)
+            val ipv4Ok = canConnect("127.0.0.1")
+            val ipv6Ok = canConnect("::1")
             synchronized(lock) {
-                if (generation == selfTestGeneration && ipv4Server?.isAlive == true) {
-                    _state.value = _state.value.copy(localSelfTest = ok)
+                if (generation == selfTestGeneration && hasLiveServer()) {
+                    ipv4Probe = ipv4Ok
+                    ipv6Probe = ipv6Ok
+                    publishState()
                 }
             }
         }, "WebUiSelfTest").apply {
@@ -203,6 +221,16 @@ object WebUiManager {
             start()
         }
     }
+
+    private fun canConnect(host: String): Boolean = runCatching {
+        Socket().use { socket ->
+            socket.connect(
+                InetSocketAddress(InetAddress.getByName(host), Config.webUiPort),
+                SELF_TEST_TIMEOUT_MS,
+            )
+            socket.isConnected
+        }
+    }.getOrDefault(false)
 
     private fun hasLiveServer(): Boolean =
         ipv4Server?.isAlive == true || ipv6Server?.isAlive == true
@@ -213,7 +241,9 @@ object WebUiManager {
         ipv6Server?.stop()
         ipv4Server = null
         ipv6Server = null
-        ipv6StartError = null
+        ipv4Probe = null
+        ipv6Probe = null
+        listenerErrors = emptyList()
     }
 
     private fun createBoundServer(context: Context, bindAddress: InetAddress): WebUiServer =
