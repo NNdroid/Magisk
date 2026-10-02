@@ -2,7 +2,7 @@
 
 # Magisk for Android TV
 
-[![Android TV Build](https://github.com/NNdroid/Magisk/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/NNdroid/Magisk/actions/workflows/build.yml)
+[![Android TV Build](https://github.com/NNdroid/MagiskForAndroidTv/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/NNdroid/MagiskForAndroidTv/actions/workflows/build.yml)
 [![Upstream](https://img.shields.io/badge/upstream-topjohnwu%2FMagisk-00AF9C)](https://github.com/topjohnwu/Magisk)
 [![License](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 
@@ -73,6 +73,7 @@ The fork-specific CI performs:
 - Ubuntu-based `arm64-v8a` native and application builds
 - Repository tests
 - Build artifact upload after a successful build
+- Optional custom JKS signing for trusted `master` and manual builds
 
 The CI intentionally does not run the upstream phone AVD matrix, x86 phone tests, macOS build matrix, or Windows build matrix because this fork targets Android TV and its automated artifacts are arm64-focused.
 
@@ -81,6 +82,52 @@ For **official Magisk releases**, use the upstream project:
 - https://github.com/topjohnwu/Magisk/releases
 
 For this TV fork, use this repository's Actions/build artifacts or releases when available. Fork builds are not official Magisk releases.
+
+## GitHub Actions JKS Signing
+
+The Android TV build can sign generated APKs with a private JKS stored entirely in GitHub Actions Secrets. The repository never commits the keystore or signing passwords.
+
+Configure all four repository secrets under **Settings → Secrets and variables → Actions**:
+
+| Secret | Value |
+| --- | --- |
+| `TV_SIGNING_JKS_BASE64` | Base64-encoded contents of the `.jks` keystore |
+| `TV_SIGNING_STORE_PASSWORD` | Keystore/store password |
+| `TV_SIGNING_KEY_ALIAS` | Alias of the signing key in the keystore |
+| `TV_SIGNING_KEY_PASSWORD` | Password for the selected key alias |
+
+All four secrets must be configured together. If none are configured, the workflow keeps using the project's default debug signing key. If only some are configured, the build fails early with a clear error instead of producing an incorrectly signed artifact.
+
+On Linux, a JKS can be converted to a single-line Base64 value with:
+
+```bash
+base64 -w 0 release.jks
+```
+
+A portable alternative is:
+
+```bash
+base64 < release.jks | tr -d '\r\n'
+```
+
+The resulting text is the value for `TV_SIGNING_JKS_BASE64`.
+
+Custom signing is intentionally enabled only for:
+
+- pushes to `master`
+- manually started `workflow_dispatch` builds
+
+Pull-request builds do **not** receive the custom signing secrets. This prevents untrusted or review-stage PR code from accessing the private signing key.
+
+During a signed build, Actions:
+
+1. decodes the JKS into the runner temporary directory;
+2. validates the keystore password and alias with `keytool`;
+3. injects `keyStore`, `keyStorePass`, `keyAlias`, and `keyPass` into a temporary Magisk build config;
+4. builds with Magisk's existing signing configuration;
+5. deletes the temporary JKS and signing config before artifact upload.
+
+Only the generated `out/` build artifacts are uploaded.
 
 ## Building
 
