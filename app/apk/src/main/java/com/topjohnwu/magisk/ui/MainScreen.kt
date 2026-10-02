@@ -1,5 +1,7 @@
 package com.topjohnwu.magisk.ui
 
+import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
@@ -35,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -43,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -71,6 +73,8 @@ import com.topjohnwu.magisk.ui.superuser.SuperuserScreen
 import com.topjohnwu.magisk.ui.superuser.SuperuserViewModel
 import com.topjohnwu.magisk.core.R as CoreR
 
+private const val DOUBLE_BACK_EXIT_TIMEOUT_MS = 2_000L
+
 enum class Tab(val titleRes: Int, val iconRes: Int) {
     MODULES(CoreR.string.modules, R.drawable.ic_module),
     SUPERUSER(CoreR.string.superuser, CoreR.drawable.ic_superuser),
@@ -87,6 +91,7 @@ fun MainScreen(
     onAuthenticate: ((onSuccess: () -> Unit) -> Unit)? = null,
 ) {
     val navigator = LocalNavigator.current
+    val rootActivity = LocalActivity.current as? ComponentActivity
     val visibleTabs = remember {
         Tab.entries.filter { tab ->
             when (tab) {
@@ -105,7 +110,7 @@ fun MainScreen(
         List(visibleTabs.size) { FocusRequester() }
     }
     var moduleFabAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-    var navigationRailHasFocus by remember { mutableStateOf(false) }
+    var lastBackPressedAt by remember { mutableLongStateOf(0L) }
     val currentTab = visibleTabs[currentPage]
     val isModulesTab = currentTab == Tab.MODULES
     val modulesNavFocusRequester = visibleTabs.indexOf(Tab.MODULES)
@@ -117,8 +122,22 @@ fun MainScreen(
         tabFocusRequesters.getOrNull(currentPage)?.requestFocus()
     }
 
-    BackHandler(enabled = !navigationRailHasFocus) {
-        tabFocusRequesters.getOrNull(currentPage)?.requestFocus()
+    BackHandler {
+        val now = SystemClock.elapsedRealtime()
+        if (lastBackPressedAt != 0L && now - lastBackPressedAt <= DOUBLE_BACK_EXIT_TIMEOUT_MS) {
+            lastBackPressedAt = 0L
+            rootActivity?.finish()
+        } else {
+            lastBackPressedAt = now
+            tabFocusRequesters.getOrNull(currentPage)?.requestFocus()
+            rootActivity?.let { activity ->
+                Toast.makeText(
+                    activity,
+                    R.string.tv_press_back_again_to_exit,
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+        }
     }
 
     val moduleFab: @Composable () -> Unit = {
@@ -155,7 +174,6 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(176.dp)
-                .onFocusChanged { navigationRailHasFocus = it.hasFocus }
                 .focusGroup(),
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
