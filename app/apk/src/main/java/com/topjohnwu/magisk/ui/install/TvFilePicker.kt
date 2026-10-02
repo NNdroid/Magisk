@@ -111,15 +111,41 @@ fun TvFilePickerDialog(
 
     var activeRoot by remember { mutableStateOf<TvStorageRoot?>(null) }
     var currentDirectory by remember { mutableStateOf<File?>(null) }
+    var lastRootPath by remember { mutableStateOf<String?>(null) }
+    var desiredEntryPath by remember { mutableStateOf<String?>(null) }
 
     val entries = remember(currentDirectory, permissionRefresh) {
         currentDirectory?.let(::listPatchEntries).orEmpty()
     }
+    val rootFocusIndex = remember(roots, lastRootPath) {
+        val remembered = roots.indexOfFirst { it.directory.absolutePath == lastRootPath }
+        when {
+            remembered >= 0 -> remembered
+            roots.isNotEmpty() -> 0
+            else -> -1
+        }
+    }
+    val entryFocusIndex = remember(entries, desiredEntryPath) {
+        val remembered = entries.indexOfFirst { it.file.absolutePath == desiredEntryPath }
+        when {
+            remembered >= 0 -> remembered
+            entries.isNotEmpty() -> 0
+            else -> -1
+        }
+    }
 
     val permissionFocusRequester = remember { FocusRequester() }
-    val listFocusRequester = remember(currentDirectory, roots.size, entries.size) { FocusRequester() }
+    val listFocusRequester = remember(
+        currentDirectory,
+        roots.size,
+        entries.size,
+        rootFocusIndex,
+        entryFocusIndex,
+    ) { FocusRequester() }
 
     fun returnToRoots() {
+        activeRoot?.directory?.absolutePath?.let { lastRootPath = it }
+        desiredEntryPath = null
         currentDirectory = null
         activeRoot = null
     }
@@ -139,6 +165,7 @@ fun TvFilePickerDialog(
         if (parent == null || !isInsideRoot(parent, root)) {
             returnToRoots()
         } else {
+            desiredEntryPath = current.absolutePath
             currentDirectory = parent
         }
     }
@@ -175,7 +202,14 @@ fun TvFilePickerDialog(
 
     BackHandler { navigateUp() }
 
-    LaunchedEffect(hasStorageAccess, currentDirectory, roots.size, entries.size) {
+    LaunchedEffect(
+        hasStorageAccess,
+        currentDirectory,
+        roots.size,
+        entries.size,
+        rootFocusIndex,
+        entryFocusIndex,
+    ) {
         val requester = if (hasStorageAccess) listFocusRequester else permissionFocusRequester
         runCatching { requester.requestFocus() }
     }
@@ -283,13 +317,15 @@ fun TvFilePickerDialog(
                                 title = root.label,
                                 subtitle = root.directory.absolutePath,
                                 isDirectory = true,
-                                modifier = if (index == 0) {
+                                modifier = if (index == rootFocusIndex) {
                                     Modifier.focusRequester(listFocusRequester)
                                 } else {
                                     Modifier
                                 },
                                 onClick = {
+                                    lastRootPath = root.directory.absolutePath
                                     activeRoot = root
+                                    desiredEntryPath = null
                                     currentDirectory = root.directory
                                 },
                             )
@@ -309,14 +345,18 @@ fun TvFilePickerDialog(
                                 title = stringResource(R.string.tv_file_picker_up),
                                 subtitle = activeRoot?.label.orEmpty(),
                                 isDirectory = true,
-                                modifier = Modifier.focusRequester(listFocusRequester),
+                                modifier = if (entryFocusIndex < 0) {
+                                    Modifier.focusRequester(listFocusRequester)
+                                } else {
+                                    Modifier
+                                },
                                 onClick = ::navigateUp,
                             )
                         }
                         itemsIndexed(
                             items = entries,
                             key = { _, entry -> entry.file.absolutePath },
-                        ) { _, entry ->
+                        ) { index, entry ->
                             PickerRow(
                                 title = entry.file.name,
                                 subtitle = if (entry.isDirectory) {
@@ -325,8 +365,14 @@ fun TvFilePickerDialog(
                                     Formatter.formatShortFileSize(context, entry.file.length())
                                 },
                                 isDirectory = entry.isDirectory,
+                                modifier = if (index == entryFocusIndex) {
+                                    Modifier.focusRequester(listFocusRequester)
+                                } else {
+                                    Modifier
+                                },
                                 onClick = {
                                     if (entry.isDirectory) {
+                                        desiredEntryPath = null
                                         currentDirectory = entry.file
                                     } else {
                                         onFileSelected(entry.file)
