@@ -25,6 +25,7 @@ def forbid(text: str, needle: str, label: str) -> None:
 
 def main() -> int:
     manifest = read("app/apk/src/main/AndroidManifest.xml")
+    main_activity = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/MainActivity.kt")
     main_screen = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/MainScreen.kt")
     theme = read("app/apk/src/main/java/com/topjohnwu/magisk/ui/MagiskTheme.kt")
     resource_theme = read("app/apk/src/main/res/values/themes.xml")
@@ -45,7 +46,12 @@ def main() -> int:
     require(manifest, "android.intent.category.LEANBACK_LAUNCHER", "manifest")
     require(manifest, 'android:screenOrientation="landscape"', "manifest")
     require(manifest, 'android:banner="@drawable/tv_banner"', "manifest")
+    require(manifest, 'android.permission.ACCESS_LOCAL_NETWORK', "Android 17 WebUI LAN permission")
     forbid(manifest, "android.intent.category.LAUNCHER", "manifest")
+
+    require(main_activity, "Manifest.permission.ACCESS_LOCAL_NETWORK", "Android 17 WebUI LAN permission")
+    require(main_activity, "requestLocalNetworkPermission.launch", "Android 17 WebUI LAN permission")
+    require(main_activity, "WebUiManager.reportError", "WebUI LAN permission error reporting")
 
     require(main_screen, "NavigationRail(", "main screen")
     require(main_screen, ".tvFocusFrame(", "main screen")
@@ -105,6 +111,7 @@ def main() -> int:
     print("- built-in TV picker for patching and module installs")
     print("- TV file picker focus restoration")
     print("- WebUI Home QR entry on port 18091")
+    print("- WebUI Android 17 local-network runtime permission")
     print("- WebUI random-token secure default")
     print("- WebUI system/light/dark themes")
     print("- WebUI browser module installation and image patching")
