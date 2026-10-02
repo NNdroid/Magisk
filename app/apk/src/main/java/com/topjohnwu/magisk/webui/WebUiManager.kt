@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
 import java.net.NetworkInterface
 import java.security.SecureRandom
 
@@ -146,28 +148,65 @@ object WebUiManager {
     private fun lanUrls(port: Int): List<String> {
         val candidates = mutableListOf<Pair<Int, String>>()
         val interfaces = runCatching { NetworkInterface.getNetworkInterfaces() }.getOrNull()
-            ?: return listOf("http://127.0.0.1:$port")
+            ?: return emptyList()
         while (interfaces.hasMoreElements()) {
             val network = interfaces.nextElement()
             if (runCatching { !network.isUp || network.isLoopback }.getOrDefault(true)) continue
+            val interfacePriority = interfacePriority(network.name)
             val addresses = network.inetAddresses
             while (addresses.hasMoreElements()) {
                 val address = addresses.nextElement()
-                if (address !is Inet4Address || address.isLoopbackAddress || address.isLinkLocalAddress) continue
-                val name = network.name.lowercase()
-                val priority = when {
-                    name.startsWith("wlan") || name.startsWith("wifi") -> 0
-                    name.startsWith("eth") -> 1
-                    address.isSiteLocalAddress -> 2
-                    else -> 3
+                if (!isUsableLanAddress(address)) continue
+
+                // Prefer IPv4 for QR compatibility when both families are available on
+                // the same interface, but keep IPv6 as a first-class fallback for
+                // IPv6-only networks.
+                val familyPriority = when (address) {
+                    is Inet4Address -> 0
+                    is Inet6Address -> 1
+                    else -> continue
                 }
-                candidates += priority to "http://${address.hostAddress}:$port"
+                val url = address.toHttpUrl(port) ?: continue
+                candidates += (interfacePriority * 10 + familyPriority) to url
             }
         }
         return candidates
             .sortedBy { it.first }
             .map { it.second }
             .distinct()
-            .ifEmpty { listOf("http://127.0.0.1:$port") }
+    }
+
+    private fun interfacePriority(name: String): Int {
+        val normalized = name.lowercase()
+        return when {
+            normalized.startsWith("wlan") || normalized.startsWith("wifi") -> 0
+            normalized.startsWith("eth") -> 1
+            normalized.startsWith("en") -> 2
+            normalized.startsWith("tun") || normalized.startsWith("wg") -> 4
+            else -> 3
+        }
+    }
+
+    private fun isUsableLanAddress(address: InetAddress): Boolean =
+        !address.isAnyLocalAddress &&
+            !address.isLoopbackAddress &&
+            !address.isLinkLocalAddress &&
+            !address.isMulticastAddress &&
+            (address is Inet4Address || address is Inet6Address)
+
+    private fun InetAddress.toHttpUrl(port: Int): String? {
+        val rawHost = hostAddress ?: return null
+        val host = when (this) {
+            is Inet4Address -> rawHost
+            is Inet6Address -> {
+                // RFC 6874 requires a literal '%' used by a scoped IPv6 address to
+                // be escaped in a URI. Link-local addresses are filtered above, but
+                // preserve this for devices that attach a scope to other addresses.
+                val escaped = rawHost.replace("%", "%25")
+                "[$escaped]"
+            }
+            else -> return null
+        }
+        return "http://$host:$port"
     }
 }
