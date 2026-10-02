@@ -17,4 +17,8 @@
     <string name="webui_qr_description">QR code for opening Magisk WebUI</string>
     <string name="webui_error">WebUI error: %1$s</string>
     <string name="webui_local_network_permission_denied">Local network permission is required to accept WebUI connections on Android 17.</string>
+    <string name="webui_service_channel">Magisk WebUI</string>
+    <string name="webui_service_channel_description">Keeps the local Android TV WebUI available in the background.</string>
+    <string name="webui_service_title">Magisk WebUI is running</string>
+    <string name="webui_service_text">Listening on local port %1$d</string>
 </resources>
