@@ -96,7 +96,7 @@ jobs:
         uses: ./.github/actions/setup
 
       - name: Run tests
-        run: python build.py -v test
+        run: python build.py -v -c .github/ci.prop test
 
       - name: Stop Gradle daemon
         if: ${{ always() }}
