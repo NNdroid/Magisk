@@ -45,7 +45,6 @@ internal fun WebUiCard(
 ) {
     val state by WebUiManager.state.collectAsStateWithLifecycle()
     val accessUrl = state.accessUrl
-    val displayUrl = accessUrl?.substringBefore('#')
     val qr = remember(accessUrl) {
         accessUrl?.let(::createWebUiQr)
     }
@@ -104,14 +103,16 @@ internal fun WebUiCard(
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
-                    if (displayUrl != null) {
-                        Text(
-                            text = displayUrl,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
+                    if (state.urls.isNotEmpty()) {
+                        state.urls.take(3).forEach { url ->
+                            Text(
+                                text = url,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        }
                         Text(
                             text = stringResource(R.string.webui_scan_hint),
                             style = MaterialTheme.typography.bodyMedium,
