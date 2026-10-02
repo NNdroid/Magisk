@@ -13,7 +13,11 @@ import java.net.Socket
 import java.security.SecureRandom
 
 private const val TOKEN_BYTES = 24
-private const val SELF_TEST_TIMEOUT_MS = 750
+private const val SELF_TEST_TIMEOUT_MS = 250
+private const val SELF_TEST_ATTEMPTS = 4
+private const val SELF_TEST_RETRY_DELAY_MS = 50L
+private const val STOP_WAIT_ATTEMPTS = 10
+private const val STOP_WAIT_DELAY_MS = 25L
 private const val IPV4_ANY = "0.0.0.0"
 private const val IPV6_ANY = "::"
 private const val IPV4_LOOPBACK = "127.0.0.1"
@@ -39,6 +43,7 @@ object WebUiManager {
     private var ipv6Server: WebUiServer? = null
     private var ipv4Probe: Boolean? = null
     private var ipv6Probe: Boolean? = null
+    private var boundPort: Int? = null
     private var listenerErrors: List<String> = emptyList()
     private var appContext: Context? = null
     private var networkMonitor: WebUiNetworkMonitor? = null
@@ -76,16 +81,19 @@ object WebUiManager {
             }
 
             ensureRandomToken()
+            val requestedPort = Config.webUiPort
 
-            // A sticky foreground service can be redelivered without process death. Re-probe
-            // existing sockets before deciding to rebuild them.
-            if (hasLiveServer() && probeExistingServersLocked()) {
+            // A successfully bound listener is authoritative. Loopback probes are only
+            // health/capability checks and must never destroy a listener after one transient
+            // failure. Rebuild only when the configured port actually changed.
+            if (hasLiveServer() && boundPort == requestedPort) {
+                probeExistingServersLocked()
                 publishStateLocked()
                 return
             }
 
             stopServersLocked()
-            startDualStackListenersLocked(context.applicationContext)
+            startDualStackListenersLocked(context.applicationContext, requestedPort)
             publishStateLocked()
         }
     }
@@ -113,6 +121,9 @@ object WebUiManager {
 
     fun restart() {
         val context = synchronized(lock) {
+            // NanoHTTPD closes its server socket during stop(). Wait a short bounded interval
+            // before asking the already-running Service to bind again so Save cannot race the
+            // previous listener teardown and produce EADDRINUSE.
             stopServersLocked()
             appContext
         }
@@ -148,8 +159,9 @@ object WebUiManager {
 
     fun currentAccessUrl(): String? = synchronized(lock) {
         val (ipv4, ipv6) = activeFamiliesLocked()
+        val port = activePortLocked()
         buildAccessUrl(
-            networkMonitor?.lanUrls(Config.webUiPort, ipv4, ipv6)?.firstOrNull()
+            networkMonitor?.lanUrls(port, ipv4, ipv6)?.firstOrNull()
         )
     }
 
@@ -159,44 +171,58 @@ object WebUiManager {
         }
     }
 
-    private fun startDualStackListenersLocked(context: Context) {
+    private fun startDualStackListenersLocked(context: Context, port: Int) {
         val errors = mutableListOf<String>()
+        boundPort = port
+        ipv4Probe = null
+        ipv6Probe = null
 
-        // Prefer one IPv6 wildcard socket first. Linux/Android may make this socket
-        // dual-stack, in which case it also accepts IPv4-mapped clients and no second
-        // socket should be created on the same port.
-        ipv6Server = startServer(context, IPV6_ANY, "IPv6", errors)
-        if (ipv6Server != null) {
-            ipv6Probe = canConnect(IPV6_LOOPBACK)
-            val ipv4ViaIpv6 = canConnect(IPV4_LOOPBACK)
-            if (ipv4ViaIpv6) {
-                ipv4Probe = true
+        // Prefer one IPv6 wildcard socket. On the usual Android/Linux dual-stack setup this
+        // socket also owns the IPv4 port; on IPV6_V6ONLY devices we add a separate IPv4 socket.
+        val ipv6Result = startServer(context, IPV6_ANY, "IPv6", port)
+        ipv6Server = ipv6Result.server
+        if (ipv6Server?.isAlive == true) {
+            ipv6Probe = canConnectEventually(IPV6_LOOPBACK, port)
+            ipv4Probe = canConnectEventually(IPV4_LOOPBACK, port)
+            if (ipv6Probe != true) {
+                errors += "IPv6 listener is bound but its local self-test did not answer"
             }
         } else {
             ipv6Probe = false
+            ipv6Result.error?.let { errors += formatListenerError("IPv6", it) }
         }
 
-        // Only add an explicit IPv4 listener when the IPv6 wildcard did not actually
-        // accept IPv4. This avoids EADDRINUSE on dual-stack Android kernels.
         if (ipv4Probe != true) {
-            ipv4Server = startServer(context, IPV4_ANY, "IPv4", errors)
-            ipv4Probe = ipv4Server != null && canConnect(IPV4_LOOPBACK)
-        }
-
-        // A socket that cannot pass its own loopback probe is not useful. Keep the IPv6
-        // socket only when it serves IPv6 or is the verified dual-stack owner of IPv4.
-        if (ipv6Probe != true && ipv4Server != null) {
-            ipv6Server?.stop()
-            ipv6Server = null
-        }
-        if (ipv4Probe != true) {
-            ipv4Server?.stop()
-            ipv4Server = null
+            val ipv4Result = startServer(context, IPV4_ANY, "IPv4", port)
+            ipv4Server = ipv4Result.server
+            if (ipv4Server?.isAlive == true) {
+                ipv4Probe = canConnectEventually(IPV4_LOOPBACK, port)
+                if (ipv4Probe != true) {
+                    errors += "IPv4 listener is bound but its local self-test did not answer"
+                }
+            } else {
+                val error = ipv4Result.error
+                if (error != null && error.isAddressAlreadyInUse() && ipv6Server?.isAlive == true) {
+                    // Some Android kernels reserve the IPv4 port when :: is bound even before
+                    // an immediate IPv4 loopback probe succeeds. Preserve the valid IPv6 socket
+                    // and retry the IPv4 capability probe instead of tearing everything down.
+                    ipv4Probe = canConnectEventually(
+                        IPV4_LOOPBACK,
+                        port,
+                        attempts = SELF_TEST_ATTEMPTS + 2,
+                    )
+                    if (ipv4Probe != true) {
+                        errors += "IPv4 port $port is already owned while the IPv6 listener is active"
+                    }
+                } else if (error != null) {
+                    errors += formatListenerError("IPv4", error)
+                }
+            }
         }
 
         listenerErrors = errors
-        if (ipv4Probe != true && ipv6Probe != true) {
-            stopServersLocked(clearErrors = false)
+        if (!hasLiveServer()) {
+            boundPort = null
         }
     }
 
@@ -204,37 +230,58 @@ object WebUiManager {
         context: Context,
         bindHost: String,
         familyName: String,
-        errors: MutableList<String>,
-    ): WebUiServer? = runCatching {
-        WebUiServer(
+        port: Int,
+    ): ServerStartResult {
+        val server = WebUiServer(
             context = context,
             bindHost = bindHost,
-            port = Config.webUiPort,
+            port = port,
             onConfigChanged = ::publishState,
-        ).also { server ->
+        )
+        return try {
             server.start(5_000, false)
             check(server.isAlive) { "$familyName listener did not stay alive" }
+            ServerStartResult(server = server)
+        } catch (error: Throwable) {
+            runCatching { server.stop() }
+            ServerStartResult(error = error)
         }
-    }.onFailure { error ->
-        errors += "$familyName: ${error.message ?: error.javaClass.simpleName}"
-    }.getOrNull()
-
-    private fun probeExistingServersLocked(): Boolean {
-        val ipv4Ok = canConnect(IPV4_LOOPBACK)
-        val ipv6Ok = canConnect(IPV6_LOOPBACK)
-        ipv4Probe = ipv4Ok
-        ipv6Probe = ipv6Ok
-        if (!ipv4Ok && !ipv6Ok) {
-            stopServersLocked()
-            return false
-        }
-        return true
     }
 
-    private fun canConnect(host: String): Boolean = runCatching {
+    private fun probeExistingServersLocked(): Boolean {
+        val port = boundPort ?: return false
+        val ipv4Live = ipv4Server?.isAlive == true
+        val ipv6Live = ipv6Server?.isAlive == true
+
+        // Probes describe health; the server object's live/bound state describes ownership.
+        // Never stop or discard a bound socket solely because a loopback connection missed.
+        ipv6Probe = if (ipv6Live) canConnectEventually(IPV6_LOOPBACK, port) else false
+        ipv4Probe = if (ipv4Live || ipv6Live) {
+            canConnectEventually(IPV4_LOOPBACK, port)
+        } else {
+            false
+        }
+        return ipv4Live || ipv6Live
+    }
+
+    private fun canConnectEventually(
+        host: String,
+        port: Int,
+        attempts: Int = SELF_TEST_ATTEMPTS,
+    ): Boolean {
+        repeat(attempts.coerceAtLeast(1)) { attempt ->
+            if (canConnect(host, port)) return true
+            if (attempt + 1 < attempts) {
+                runCatching { Thread.sleep(SELF_TEST_RETRY_DELAY_MS) }
+            }
+        }
+        return false
+    }
+
+    private fun canConnect(host: String, port: Int): Boolean = runCatching {
         Socket().use { socket ->
             socket.connect(
-                InetSocketAddress(InetAddress.getByName(host), Config.webUiPort),
+                InetSocketAddress(InetAddress.getByName(host), port),
                 SELF_TEST_TIMEOUT_MS,
             )
             socket.isConnected
@@ -244,13 +291,21 @@ object WebUiManager {
     private fun hasLiveServer(): Boolean =
         ipv4Server?.isAlive == true || ipv6Server?.isAlive == true
 
-    private fun activeFamiliesLocked(): Pair<Boolean, Boolean> =
-        (ipv4Probe == true) to (ipv6Probe == true)
+    private fun activeFamiliesLocked(): Pair<Boolean, Boolean> {
+        val ipv4Live = ipv4Server?.isAlive == true
+        val ipv6Live = ipv6Server?.isAlive == true
+        val ipv4ViaIpv6 = ipv6Live && ipv4Probe == true
+        return (ipv4Live || ipv4ViaIpv6) to ipv6Live
+    }
+
+    private fun activePortLocked(): Int =
+        if (hasLiveServer()) boundPort ?: Config.webUiPort else Config.webUiPort
 
     private fun publishStateLocked() {
         val (ipv4, ipv6) = activeFamiliesLocked()
+        val port = activePortLocked()
         val urls = if (ipv4 || ipv6) {
-            networkMonitor?.lanUrls(Config.webUiPort, ipv4, ipv6).orEmpty()
+            networkMonitor?.lanUrls(port, ipv4, ipv6).orEmpty()
         } else {
             emptyList()
         }
@@ -292,14 +347,45 @@ object WebUiManager {
     }
 
     private fun stopServersLocked(clearErrors: Boolean = true) {
-        ipv4Server?.stop()
-        ipv6Server?.stop()
+        val servers = listOfNotNull(ipv4Server, ipv6Server)
+        servers.forEach { server -> runCatching { server.stop() } }
+        awaitServersStopped(servers)
+
         ipv4Server = null
         ipv6Server = null
         ipv4Probe = null
         ipv6Probe = null
+        boundPort = null
         if (clearErrors) listenerErrors = emptyList()
     }
+
+    private fun awaitServersStopped(servers: List<WebUiServer>) {
+        if (servers.isEmpty()) return
+        repeat(STOP_WAIT_ATTEMPTS) { attempt ->
+            if (servers.none { it.isAlive }) return
+            if (attempt + 1 < STOP_WAIT_ATTEMPTS) {
+                runCatching { Thread.sleep(STOP_WAIT_DELAY_MS) }
+            }
+        }
+    }
+
+    private fun Throwable.isAddressAlreadyInUse(): Boolean {
+        var error: Throwable? = this
+        while (error != null) {
+            val message = error.message.orEmpty()
+            if (
+                message.contains("EADDRINUSE", ignoreCase = true) ||
+                message.contains("Address already in use", ignoreCase = true)
+            ) {
+                return true
+            }
+            error = error.cause
+        }
+        return false
+    }
+
+    private fun formatListenerError(familyName: String, error: Throwable): String =
+        "$familyName: ${error.message ?: error.javaClass.simpleName}"
 
     private fun buildAccessUrl(base: String?): String? {
         base ?: return null
@@ -310,4 +396,9 @@ object WebUiManager {
             "$base/#token=${Uri.encode(token)}"
         }
     }
+
+    private data class ServerStartResult(
+        val server: WebUiServer? = null,
+        val error: Throwable? = null,
+    )
 }
