@@ -55,17 +55,27 @@ class HomeViewModel(
         private var checkedEnv = false
 
         fun computeMagiskState() = when {
-            Info.isRooted && Info.env.isUnsupported -> State.OUTDATED
-            !Info.env.isActive -> State.INVALID
-            Info.env.versionCode < BuildConfig.APP_VERSION_CODE -> State.OUTDATED
+            Info.magiskInfo.isUnsupported -> State.OUTDATED
+            !Info.magiskInfo.isDetected -> State.INVALID
+            Info.magiskInfo.versionCode < BuildConfig.APP_VERSION_CODE -> State.OUTDATED
             else -> State.UP_TO_DATE
         }
 
-        fun computeMagiskInstalledVersion() = Info.env.run {
-            if (isActive)
-                "$versionString ($versionCode)" + if (isDebug) " (D)" else ""
-            else
+        fun computeMagiskInstalledVersion() = Info.magiskInfo.run {
+            if (!isDetected) {
                 ""
+            } else {
+                buildString {
+                    append("$versionString ($versionCode)")
+                    if (isDebug) append(" (D)")
+                    if (!Info.isRooted || !Info.env.isActive) {
+                        append(" · ")
+                        append(AppContext.getString(CoreR.string.superuser))
+                        append(' ')
+                        append(AppContext.getString(CoreR.string.not_available))
+                    }
+                }
+            }
         }
 
         fun computeManagerInstalledVersion() =
@@ -152,7 +162,7 @@ class HomeViewModel(
     }
 
     private suspend fun ensureEnv() {
-        if (magiskState == State.INVALID || checkedEnv) return
+        if (!Info.env.isActive || checkedEnv) return
         val cmd = "env_check ${Info.env.versionString} ${Info.env.versionCode}"
         val code = Shell.cmd(cmd).await().code
         if (code != 0) {
