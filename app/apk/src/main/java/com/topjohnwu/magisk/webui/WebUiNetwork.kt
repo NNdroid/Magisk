@@ -20,8 +20,9 @@ internal class WebUiNetworkMonitor(
     context: Context,
     private val onChanged: () -> Unit,
 ) {
-    private val connectivity = context.applicationContext
-        .getSystemService(ConnectivityManager::class.java)
+    private val connectivity = requireNotNull(
+        context.applicationContext.getSystemService(ConnectivityManager::class.java)
+    )
     private var callbackRegistered = false
 
     private val callback = object : ConnectivityManager.NetworkCallback() {
@@ -78,7 +79,7 @@ internal class WebUiNetworkMonitor(
                 interfaceName = properties.interfaceName,
             )
             for (linkAddress in properties.linkAddresses) {
-                val address = linkAddress.address ?: continue
+                val address = linkAddress.address
                 addCandidate(output, address, port, allowIpv4, allowIpv6, networkScore)
             }
         }
