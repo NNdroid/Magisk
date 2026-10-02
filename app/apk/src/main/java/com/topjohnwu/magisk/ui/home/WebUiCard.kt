@@ -53,6 +53,16 @@ internal fun WebUiCard(
         Config.Value.WEBUI_AUTH_CUSTOM_TOKEN -> stringResource(R.string.webui_auth_custom)
         else -> stringResource(R.string.webui_auth_random)
     }
+    val ipv4Status = if (state.ipv4Listening) {
+        stringResource(R.string.webui_listener_on)
+    } else {
+        stringResource(R.string.webui_listener_off)
+    }
+    val ipv6Status = if (state.ipv6Listening) {
+        stringResource(R.string.webui_listener_on)
+    } else {
+        stringResource(R.string.webui_listener_off)
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -94,6 +104,19 @@ internal fun WebUiCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (state.running) {
                             MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.webui_listener_status,
+                            ipv4Status,
+                            ipv6Status,
+                        ),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (state.ipv4Listening || state.ipv6Listening) {
+                            MaterialTheme.colorScheme.onSecondaryContainer
                         } else {
                             MaterialTheme.colorScheme.error
                         },
