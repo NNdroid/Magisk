@@ -31,6 +31,7 @@ import com.google.android.material.color.utilities.MaterialDynamicColors
 import com.google.android.material.color.utilities.SchemeTonalSpot
 import com.topjohnwu.magisk.core.Config
 import com.topjohnwu.magisk.core.model.ColorMode
+import com.topjohnwu.magisk.ui.component.isTelevision
 
 @SuppressLint("RestrictedApi")
 fun dynamicColorScheme(
@@ -180,6 +181,21 @@ val MagiskTypography = Typography(
     ),
 )
 
+val MagiskTvTypography = MagiskTypography.copy(
+    headlineLarge = MagiskTypography.headlineLarge.copy(fontSize = 36.sp, lineHeight = 44.sp),
+    headlineMedium = MagiskTypography.headlineMedium.copy(fontSize = 32.sp, lineHeight = 40.sp),
+    headlineSmall = MagiskTypography.headlineSmall.copy(fontSize = 28.sp, lineHeight = 36.sp),
+    titleLarge = MagiskTypography.titleLarge.copy(fontSize = 24.sp, lineHeight = 32.sp),
+    titleMedium = MagiskTypography.titleMedium.copy(fontSize = 20.sp, lineHeight = 28.sp),
+    titleSmall = MagiskTypography.titleSmall.copy(fontSize = 18.sp, lineHeight = 24.sp),
+    bodyLarge = MagiskTypography.bodyLarge.copy(fontSize = 18.sp, lineHeight = 28.sp),
+    bodyMedium = MagiskTypography.bodyMedium.copy(fontSize = 16.sp, lineHeight = 24.sp),
+    bodySmall = MagiskTypography.bodySmall.copy(fontSize = 14.sp, lineHeight = 20.sp),
+    labelLarge = MagiskTypography.labelLarge.copy(fontSize = 16.sp, lineHeight = 22.sp),
+    labelMedium = MagiskTypography.labelMedium.copy(fontSize = 14.sp, lineHeight = 20.sp),
+    labelSmall = MagiskTypography.labelSmall.copy(fontSize = 13.sp, lineHeight = 18.sp),
+)
+
 @Composable
 fun MagiskTheme(
     content: @Composable () -> Unit
@@ -187,6 +203,7 @@ fun MagiskTheme(
     val isDark = isSystemInDarkTheme()
     val mode = ColorMode.fromValue(ThemeState.colorMode)
     val context = LocalContext.current
+    val tv = isTelevision()
 
     val isDarkTheme = mode.isDark(isDark)
     val useDynamicColor = mode.isMonet && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -212,7 +229,7 @@ fun MagiskTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         shapes = MagiskShapes,
-        typography = MagiskTypography,
+        typography = if (tv) MagiskTvTypography else MagiskTypography,
         content = content
     )
 }
