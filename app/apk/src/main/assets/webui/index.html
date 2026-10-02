@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <title>Magisk for Android TV</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="authGate" class="auth-gate hidden">
+  <form id="authForm" class="auth-card">
+    <div class="brand-mark">M</div>
+    <h1>连接 Magisk for TV</h1>
+    <p>此设备已启用 WebUI Token 认证。</p>
+    <label>Token<input id="authToken" type="password" autocomplete="current-password" required></label>
+    <button class="primary" type="submit">连接</button>
+    <p id="authError" class="error"></p>
+  </form>
+</div>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark small">M</div><div><strong>Magisk for TV</strong><span>WebUI :18091</span></div></div>
+    <nav id="nav">
+      <button data-page="dashboard" class="active">概览</button>
+      <button data-page="modules">模块</button>
+      <button data-page="superuser">超级用户</button>
+      <button data-page="logs">日志</button>
+      <button data-page="settings">设置</button>
+      <button data-page="webui">WebUI</button>
+      <button data-page="power">电源</button>
+    </nav>
+    <div class="sidebar-foot"><span id="connectionDot" class="dot"></span><span id="connectionText">正在连接…</span></div>
+  </aside>
+
+  <main>
+    <header><div><h1 id="pageTitle">概览</h1><p id="pageSubtitle">设备与 Magisk 状态</p></div><button id="refreshBtn" class="ghost">刷新</button></header>
+
+    <section id="page-dashboard" class="page active">
+      <div id="statusGrid" class="grid status-grid"></div>
+      <div class="panel"><div class="panel-title"><h2>设备</h2></div><div id="deviceInfo" class="kv-grid"></div></div>
+    </section>
+
+    <section id="page-modules" class="page">
+      <div class="panel"><div class="panel-title"><div><h2>已安装模块</h2><p>启用、停用、标记删除和执行模块 action.sh</p></div></div><div id="moduleList" class="stack"></div></div>
+    </section>
+
+    <section id="page-superuser" class="page">
+      <div class="panel"><div class="panel-title"><div><h2>超级用户策略</h2><p>直接管理当前用户的 MagiskSU 策略</p></div></div><div id="policyList" class="stack"></div></div>
+    </section>
+
+    <section id="page-logs" class="page">
+      <div class="toolbar"><div class="segmented"><button data-log="su" class="active">SU 日志</button><button data-log="magisk">Magisk 日志</button></div><button id="clearLogBtn" class="danger-outline">清空当前日志</button></div>
+      <div id="suLogList" class="stack"></div><pre id="magiskLog" class="terminal hidden"></pre>
+    </section>
+
+    <section id="page-settings" class="page">
+      <form id="settingsForm" class="panel form-grid">
+        <div class="panel-title span-2"><div><h2>Magisk 设置</h2><p>部分核心设置需要重启后生效</p></div></div>
+        <label>Zygisk<select name="zygisk"><option value="true">启用</option><option value="false">停用</option></select></label>
+        <label>DenyList<select name="denyList"><option value="true">启用</option><option value="false">停用</option></select></label>
+        <label>Root 访问<select name="rootMode"><option value="0">禁用</option><option value="1">仅应用</option><option value="2">仅 ADB</option><option value="3">应用 + ADB</option></select></label>
+        <label>挂载命名空间<select name="namespaceMode"><option value="0">全局</option><option value="1">请求者</option><option value="2">隔离</option></select></label>
+        <label>SU 默认响应<select name="suAutoResponse"><option value="0">提示</option><option value="1">自动拒绝</option><option value="2">自动允许</option></select></label>
+        <label>SU 通知<select name="suNotification"><option value="0">关闭</option><option value="1">Toast</option><option value="2">状态栏</option></select></label>
+        <label class="check"><input name="suReAuth" type="checkbox">重新认证</label>
+        <label class="check"><input name="suTapjack" type="checkbox">防点击劫持</label>
+        <label class="check"><input name="suRestrict" type="checkbox">受限 Root 模式</label>
+        <label class="check"><input name="checkUpdate" type="checkbox">检查更新</label>
+        <label class="check"><input name="doh" type="checkbox">DNS over HTTPS</label>
+        <div class="span-2 actions"><button class="primary" type="submit">保存 Magisk 设置</button></div>
+      </form>
+    </section>
+
+    <section id="page-webui" class="page">
+      <form id="webuiForm" class="panel form-grid">
+        <div class="panel-title span-2"><div><h2>WebUI 设置</h2><p>默认端口 18091。认证与主题更改立即生效。</p></div></div>
+        <label>认证方式<select id="authMode" name="authMode"><option value="none">无认证</option><option value="random">随机固定 Token</option><option value="custom">自定义 Token</option></select></label>
+        <label>主题<select id="themeMode" name="theme"><option value="system">跟随设备</option><option value="light">白天主题</option><option value="dark">黑夜主题</option></select></label>
+        <label id="customTokenRow" class="span-2 hidden">自定义 Token<input id="customToken" name="customToken" type="password" minlength="8" autocomplete="new-password" placeholder="至少 8 个字符"></label>
+        <div id="currentTokenRow" class="span-2 token-box"><div><span>当前 Token</span><code id="currentToken">—</code></div><button id="copyTokenBtn" type="button" class="ghost">复制</button></div>
+        <div id="noAuthWarning" class="warning span-2 hidden">无认证会允许同一网络中任何能够访问电视 18091 端口的设备控制 Magisk。仅在可信局域网中使用。</div>
+        <div class="span-2 actions"><button id="regenTokenBtn" type="button" class="ghost">重新生成随机 Token</button><button class="primary" type="submit">保存 WebUI 设置</button></div>
+      </form>
+    </section>
+
+    <section id="page-power" class="page">
+      <div class="panel"><div class="panel-title"><div><h2>电源操作</h2><p>这些操作会立即执行，请确认电视当前没有重要任务。</p></div></div><div id="powerGrid" class="power-grid"><button data-power="reboot">重新启动</button><button data-power="recovery">Recovery</button><button data-power="bootloader">Bootloader</button><button data-power="download">Download</button><button data-power="edl" class="danger-outline">EDL</button></div></div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast"></div>
+<div id="modal" class="modal hidden"><div class="modal-card"><div class="panel-title"><h2 id="modalTitle">输出</h2><button id="modalClose" class="ghost">关闭</button></div><pre id="modalBody" class="terminal"></pre></div></div>
+<script src="/app.js"></script>
+</body>
+</html>
