@@ -13,10 +13,12 @@ import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import java.net.ServerSocket
+import java.net.Socket
 import java.net.SocketAddress
 import java.security.SecureRandom
 
 private const val TOKEN_BYTES = 24
+private const val SELF_TEST_TIMEOUT_MS = 1_500
 
 data class WebUiState(
     val running: Boolean = false,
@@ -26,6 +28,7 @@ data class WebUiState(
     val themeMode: Int = Config.Value.WEBUI_THEME_SYSTEM,
     val ipv4Listening: Boolean = false,
     val ipv6Listening: Boolean = false,
+    val localSelfTest: Boolean? = null,
     val error: String? = null,
 )
 
@@ -36,6 +39,7 @@ object WebUiManager {
     private var ipv6Server: WebUiServer? = null
     private var ipv6StartError: String? = null
     private var appContext: Context? = null
+    private var selfTestGeneration = 0L
 
     private val _state = MutableStateFlow(WebUiState())
     val state: StateFlow<WebUiState> = _state.asStateFlow()
@@ -98,6 +102,7 @@ object WebUiManager {
                 )
             } else {
                 publishState()
+                scheduleLocalSelfTest()
             }
         }
     }
@@ -164,6 +169,7 @@ object WebUiManager {
         } else {
             emptyList()
         }
+        val previousSelfTest = _state.value.localSelfTest
         _state.value = WebUiState(
             running = ipv4 || ipv6,
             urls = urls,
@@ -172,14 +178,41 @@ object WebUiManager {
             themeMode = Config.webUiTheme,
             ipv4Listening = ipv4,
             ipv6Listening = ipv6,
+            localSelfTest = if (ipv4) previousSelfTest else null,
             error = if (ipv4 || ipv6) null else ipv6StartError,
         )
+    }
+
+    private fun scheduleLocalSelfTest() {
+        if (ipv4Server?.isAlive != true) return
+        val generation = ++selfTestGeneration
+        _state.value = _state.value.copy(localSelfTest = null)
+        Thread({
+            val ok = runCatching {
+                Socket().use { socket ->
+                    socket.connect(
+                        InetSocketAddress(InetAddress.getLoopbackAddress(), Config.webUiPort),
+                        SELF_TEST_TIMEOUT_MS,
+                    )
+                    socket.isConnected
+                }
+            }.getOrDefault(false)
+            synchronized(lock) {
+                if (generation == selfTestGeneration && ipv4Server?.isAlive == true) {
+                    _state.value = _state.value.copy(localSelfTest = ok)
+                }
+            }
+        }, "WebUiSelfTest").apply {
+            isDaemon = true
+            start()
+        }
     }
 
     private fun hasLiveServer(): Boolean =
         ipv4Server?.isAlive == true || ipv6Server?.isAlive == true
 
     private fun stopServersLocked() {
+        selfTestGeneration++
         ipv4Server?.stop()
         ipv6Server?.stop()
         ipv4Server = null
