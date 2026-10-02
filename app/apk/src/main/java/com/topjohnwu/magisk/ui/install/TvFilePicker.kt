@@ -183,6 +183,7 @@ fun TvFilePickerDialog(
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
+            dismissOnBackPress = false,
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false,
         ),
@@ -494,7 +495,7 @@ private fun buildStorageRoots(context: Context): List<TvStorageRoot> {
     fun addRoot(label: String, directory: File?) {
         directory ?: return
         val file = runCatching { directory.canonicalFile }.getOrElse { directory.absoluteFile }
-        if (!file.exists() || !file.isDirectory) return
+        if (!file.exists() || !file.isDirectory || !file.canRead()) return
         roots.putIfAbsent(file.absolutePath, TvStorageRoot(label, file))
     }
 
@@ -521,6 +522,7 @@ private fun listPatchEntries(directory: File): List<TvFileEntry> {
     val files = runCatching { directory.listFiles()?.toList().orEmpty() }.getOrDefault(emptyList())
     return files.asSequence()
         .filterNot { it.name.startsWith('.') }
+        .filter { it.canRead() }
         .filter { it.isDirectory || (it.isFile && isPatchCandidate(it.name)) }
         .map { TvFileEntry(it, it.isDirectory) }
         .sortedWith(
