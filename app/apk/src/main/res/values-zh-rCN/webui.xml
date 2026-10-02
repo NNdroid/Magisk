@@ -7,6 +7,9 @@
     <string name="webui_listener_status">IPv4 %1$s · IPv6 %2$s</string>
     <string name="webui_listener_on">已监听</string>
     <string name="webui_listener_off">未监听</string>
+    <string name="webui_self_test_ok">本机 TCP 自检：正常</string>
+    <string name="webui_self_test_failed">本机 TCP 自检：失败</string>
+    <string name="webui_self_test_pending">本机 TCP 自检：检测中…</string>
     <string name="webui_auth_none">无认证</string>
     <string name="webui_auth_random">随机固定 Token</string>
     <string name="webui_auth_custom">自定义 Token</string>
