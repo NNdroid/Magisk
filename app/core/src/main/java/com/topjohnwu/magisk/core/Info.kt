@@ -73,11 +73,12 @@ object Info {
     class Env(
         val versionString: String = "",
         val isDebug: Boolean = false,
-        code: Int = -1
+        code: Int = -1,
+        active: Boolean = isRooted,
     ) {
         val versionCode = when {
             code < Const.Version.MIN_VERCODE -> -1
-            isRooted -> code
+            active -> code
             else -> -1
         }
         val isUnsupported = code > 0 && code < Const.Version.MIN_VERCODE
@@ -85,13 +86,24 @@ object Info {
     }
 
     fun init(shell: Shell) {
+        // ShellInit normally sets this before calling us, but keep Env construction tied to
+        // the actual shell being initialized instead of relying on mutable global ordering.
+        isRooted = shell.isRoot
         if (shell.isRoot) {
-            val v = fastCmd(shell, "magisk -v").split(":")
+            val rawVersion = fastCmd(shell, "magisk -v").trim()
+            val version = rawVersion.split(":")
+            val versionCode = runCatching {
+                fastCmd(shell, "magisk -V").trim().toInt()
+            }.getOrDefault(-1)
             env = Env(
-                v[0], v.size >= 3 && v[2] == "D",
-                runCatching { fastCmd("magisk -V").toInt() }.getOrDefault(-1)
+                version.firstOrNull().orEmpty(),
+                version.getOrNull(2) == "D",
+                versionCode,
+                active = true,
             )
             Config.denyList = fastCmdResult(shell, "magisk --denylist status")
+        } else {
+            env = Env()
         }
 
         val map = mutableMapOf<String, String>()
