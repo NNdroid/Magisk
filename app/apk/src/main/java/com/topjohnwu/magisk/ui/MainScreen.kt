@@ -94,7 +94,8 @@ fun MainScreen(
         }
     }
     val initialPage = visibleTabs.indexOf(Tab.entries[initialTab]).coerceAtLeast(0)
-    var currentPage by rememberSaveable { mutableIntStateOf(initialPage) }
+    var restoredPage by rememberSaveable { mutableIntStateOf(initialPage) }
+    val currentPage = restoredPage.coerceIn(0, visibleTabs.lastIndex)
     val fabFocusRequester = remember { FocusRequester() }
     val moduleContentFocusRequester = remember { FocusRequester() }
     val tabFocusRequesters = remember(visibleTabs) {
@@ -108,6 +109,7 @@ fun MainScreen(
         ?.let(tabFocusRequesters::get)
 
     LaunchedEffect(currentPage) {
+        if (restoredPage != currentPage) restoredPage = currentPage
         tabFocusRequesters.getOrNull(currentPage)?.requestFocus()
     }
 
@@ -163,7 +165,7 @@ fun MainScreen(
             visibleTabs.forEachIndexed { index, tab ->
                 NavigationRailItem(
                     selected = currentPage == index,
-                    onClick = { currentPage = index },
+                    onClick = { restoredPage = index },
                     modifier = Modifier
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                         .fillMaxWidth()
