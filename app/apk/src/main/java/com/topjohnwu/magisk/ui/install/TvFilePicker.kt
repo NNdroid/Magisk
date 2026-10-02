@@ -70,6 +70,14 @@ import com.topjohnwu.magisk.ui.component.tvFocusFrame
 import com.topjohnwu.magisk.ui.component.verticalScrollbar
 import java.io.File
 
+private val PATCH_FILE_EXTENSIONS = setOf(
+    ".img",
+    ".bin",
+    ".tar",
+    ".tar.md5",
+    ".zip",
+)
+
 private data class TvStorageRoot(
     val label: String,
     val directory: File,
@@ -88,8 +96,16 @@ fun TvFilePickerDialog(
     systemPickerAvailable: Boolean,
     onOpenSystemPicker: () -> Unit,
     modifier: Modifier = Modifier,
+    title: String? = null,
+    allowedExtensions: Set<String> = PATCH_FILE_EXTENSIONS,
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
+    val pickerTitle = title ?: stringResource(R.string.tv_file_picker_title)
+    val normalizedExtensions = remember(allowedExtensions) {
+        allowedExtensions.mapTo(linkedSetOf()) { extension ->
+            extension.lowercase().let { if (it.startsWith('.')) it else ".$it" }
+        }
+    }
     var permissionRefresh by remember { mutableIntStateOf(0) }
     val readPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -114,8 +130,8 @@ fun TvFilePickerDialog(
     var lastRootPath by remember { mutableStateOf<String?>(null) }
     var desiredEntryPath by remember { mutableStateOf<String?>(null) }
 
-    val entries = remember(currentDirectory, permissionRefresh) {
-        currentDirectory?.let(::listPatchEntries).orEmpty()
+    val entries = remember(currentDirectory, permissionRefresh, normalizedExtensions) {
+        currentDirectory?.let { listFileEntries(it, normalizedExtensions) }.orEmpty()
     }
     val rootFocusIndex = remember(roots, lastRootPath) {
         val remembered = roots.indexOfFirst { it.directory.absolutePath == lastRootPath }
@@ -226,7 +242,7 @@ fun TvFilePickerDialog(
             modifier = modifier.fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    title = { Text(stringResource(R.string.tv_file_picker_title)) },
+                    title = { Text(pickerTitle) },
                     navigationIcon = {
                         IconButton(
                             onClick = {
@@ -566,12 +582,15 @@ private fun buildStorageRoots(context: Context): List<TvStorageRoot> {
     return roots.values.toList()
 }
 
-private fun listPatchEntries(directory: File): List<TvFileEntry> {
+private fun listFileEntries(
+    directory: File,
+    allowedExtensions: Set<String>,
+): List<TvFileEntry> {
     val files = runCatching { directory.listFiles()?.toList().orEmpty() }.getOrDefault(emptyList())
     return files.asSequence()
         .filterNot { it.name.startsWith('.') }
         .filter { it.canRead() }
-        .filter { it.isDirectory || (it.isFile && isPatchCandidate(it.name)) }
+        .filter { it.isDirectory || (it.isFile && isAllowedFile(it.name, allowedExtensions)) }
         .map { TvFileEntry(it, it.isDirectory) }
         .sortedWith(
             compareByDescending<TvFileEntry> { it.isDirectory }
@@ -580,13 +599,9 @@ private fun listPatchEntries(directory: File): List<TvFileEntry> {
         .toList()
 }
 
-private fun isPatchCandidate(name: String): Boolean {
+private fun isAllowedFile(name: String, allowedExtensions: Set<String>): Boolean {
     val lower = name.lowercase()
-    return lower.endsWith(".img") ||
-        lower.endsWith(".bin") ||
-        lower.endsWith(".tar") ||
-        lower.endsWith(".tar.md5") ||
-        lower.endsWith(".zip")
+    return allowedExtensions.any(lower::endsWith)
 }
 
 private fun samePath(first: File, second: File): Boolean {
