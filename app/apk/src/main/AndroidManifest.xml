@@ -17,6 +17,7 @@
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <queries>
         <intent>
@@ -60,6 +61,7 @@
 
         <service
             android:name=".webui.WebUiService"
+            android:directBootAware="true"
             android:exported="false"
             android:foregroundServiceType="specialUse"
             android:stopWithTask="false">
@@ -67,6 +69,18 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="Keeps the local Magisk Android TV WebUI HTTP server available on the LAN while the TV UI is not in the foreground." />
         </service>
+
+        <receiver
+            android:name=".webui.WebUiBootReceiver"
+            android:directBootAware="true"
+            android:enabled="true"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
