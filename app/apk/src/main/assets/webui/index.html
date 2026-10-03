@@ -7,6 +7,324 @@
   <meta name="referrer" content="no-referrer">
   <title>Magisk for Android TV</title>
   <link rel="stylesheet" href="/app.css">
+  <style>
+    :root {
+      --glass-surface: rgba(255, 255, 255, .52);
+      --glass-surface-strong: rgba(255, 255, 255, .68);
+      --glass-surface-soft: rgba(255, 255, 255, .34);
+      --glass-stroke: rgba(255, 255, 255, .72);
+      --glass-stroke-soft: rgba(255, 255, 255, .38);
+      --glass-shadow: 0 18px 55px rgba(45, 76, 88, .13), inset 0 1px 0 rgba(255, 255, 255, .86);
+      --glass-shadow-soft: 0 8px 26px rgba(45, 76, 88, .09), inset 0 1px 0 rgba(255, 255, 255, .72);
+      --glass-highlight: rgba(255, 255, 255, .86);
+      --glass-blur: blur(28px) saturate(165%);
+      --glass-blur-soft: blur(18px) saturate(145%);
+    }
+
+    html[data-theme="dark"] {
+      --glass-surface: rgba(17, 25, 31, .58);
+      --glass-surface-strong: rgba(20, 30, 37, .76);
+      --glass-surface-soft: rgba(16, 25, 31, .40);
+      --glass-stroke: rgba(255, 255, 255, .16);
+      --glass-stroke-soft: rgba(255, 255, 255, .09);
+      --glass-shadow: 0 22px 64px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .12);
+      --glass-shadow-soft: 0 10px 32px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .09);
+      --glass-highlight: rgba(255, 255, 255, .13);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html[data-theme="system"] {
+        --glass-surface: rgba(17, 25, 31, .58);
+        --glass-surface-strong: rgba(20, 30, 37, .76);
+        --glass-surface-soft: rgba(16, 25, 31, .40);
+        --glass-stroke: rgba(255, 255, 255, .16);
+        --glass-stroke-soft: rgba(255, 255, 255, .09);
+        --glass-shadow: 0 22px 64px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .12);
+        --glass-shadow-soft: 0 10px 32px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .09);
+        --glass-highlight: rgba(255, 255, 255, .13);
+      }
+    }
+
+    html {
+      background: #dceff4;
+    }
+
+    body {
+      position: relative;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 12% 13%, rgba(86, 198, 255, .38), transparent 27rem),
+        radial-gradient(circle at 88% 12%, rgba(114, 255, 209, .28), transparent 31rem),
+        radial-gradient(circle at 74% 78%, rgba(168, 126, 255, .23), transparent 33rem),
+        linear-gradient(145deg, #e8f6fa 0%, #eef7f4 42%, #f0edfa 100%);
+      background-attachment: fixed;
+    }
+
+    body::before,
+    body::after {
+      content: "";
+      position: fixed;
+      z-index: -1;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(6px);
+      opacity: .76;
+    }
+
+    body::before {
+      width: min(38vw, 560px);
+      aspect-ratio: 1;
+      left: 18vw;
+      top: 26vh;
+      background: radial-gradient(circle at 34% 30%, rgba(255,255,255,.76), rgba(80, 203, 255, .18) 42%, transparent 70%);
+    }
+
+    body::after {
+      width: min(34vw, 500px);
+      aspect-ratio: 1;
+      right: 4vw;
+      bottom: 4vh;
+      background: radial-gradient(circle at 36% 30%, rgba(255,255,255,.54), rgba(156, 113, 255, .16) 44%, transparent 72%);
+    }
+
+    html[data-theme="dark"] body {
+      background:
+        radial-gradient(circle at 12% 13%, rgba(34, 149, 211, .26), transparent 29rem),
+        radial-gradient(circle at 88% 12%, rgba(37, 185, 145, .20), transparent 31rem),
+        radial-gradient(circle at 74% 78%, rgba(118, 77, 207, .22), transparent 34rem),
+        linear-gradient(145deg, #071014 0%, #091310 43%, #100d18 100%);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      html[data-theme="system"] body {
+        background:
+          radial-gradient(circle at 12% 13%, rgba(34, 149, 211, .26), transparent 29rem),
+          radial-gradient(circle at 88% 12%, rgba(37, 185, 145, .20), transparent 31rem),
+          radial-gradient(circle at 74% 78%, rgba(118, 77, 207, .22), transparent 34rem),
+          linear-gradient(145deg, #071014 0%, #091310 43%, #100d18 100%);
+      }
+    }
+
+    .sidebar,
+    .panel,
+    .stat,
+    .row-card,
+    .kv,
+    .sidebar-foot,
+    .token-box,
+    .check,
+    .segmented,
+    .auth-card,
+    .modal-card,
+    .operation-state:not(:empty) {
+      border-color: var(--glass-stroke);
+      background: linear-gradient(145deg, var(--glass-highlight), transparent 52%), var(--glass-surface);
+      -webkit-backdrop-filter: var(--glass-blur);
+      backdrop-filter: var(--glass-blur);
+      box-shadow: var(--glass-shadow-soft);
+    }
+
+    .sidebar {
+      background: linear-gradient(155deg, var(--glass-highlight), transparent 45%), var(--glass-surface-soft);
+      border-right-color: var(--glass-stroke-soft);
+      box-shadow: 12px 0 42px rgba(42, 72, 86, .08), inset -1px 0 0 var(--glass-stroke-soft);
+      -webkit-backdrop-filter: blur(34px) saturate(185%);
+      backdrop-filter: blur(34px) saturate(185%);
+    }
+
+    .panel,
+    .stat,
+    .auth-card,
+    .modal-card {
+      box-shadow: var(--glass-shadow);
+    }
+
+    .panel,
+    .stat,
+    .row-card,
+    .kv,
+    .token-box,
+    .check,
+    .auth-card,
+    .modal-card {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before,
+    .stat::before,
+    .row-card::before,
+    .kv::before,
+    .token-box::before,
+    .check::before,
+    .auth-card::before,
+    .modal-card::before {
+      content: "";
+      position: absolute;
+      pointer-events: none;
+      inset: 0;
+      border-radius: inherit;
+      background:
+        linear-gradient(118deg, rgba(255,255,255,.26), transparent 24% 68%, rgba(255,255,255,.08)),
+        radial-gradient(circle at 16% 0%, rgba(255,255,255,.28), transparent 27%);
+      opacity: .72;
+      mix-blend-mode: screen;
+    }
+
+    .panel > *,
+    .stat > *,
+    .row-card > *,
+    .kv > *,
+    .token-box > *,
+    .check > *,
+    .auth-card > *,
+    .modal-card > * {
+      position: relative;
+      z-index: 1;
+    }
+
+    .brand-mark {
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.46), rgba(255,255,255,.06) 36%),
+        linear-gradient(150deg, #22cfbc, #00796f 58%, #00554f);
+      border: 1px solid rgba(255,255,255,.58);
+      box-shadow: 0 12px 32px rgba(0, 113, 105, .22), inset 0 1px 1px rgba(255,255,255,.72);
+    }
+
+    nav button,
+    button,
+    select,
+    input,
+    input[type="file"]::file-selector-button {
+      border-color: var(--glass-stroke-soft);
+      background: linear-gradient(145deg, rgba(255,255,255,.18), transparent 54%), var(--glass-surface-soft);
+      -webkit-backdrop-filter: var(--glass-blur-soft);
+      backdrop-filter: var(--glass-blur-soft);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 6px 18px rgba(40,70,82,.05);
+    }
+
+    button:hover,
+    nav button:hover,
+    select:hover,
+    input:hover {
+      background: linear-gradient(145deg, rgba(255,255,255,.28), transparent 52%), var(--glass-surface);
+      border-color: var(--glass-stroke);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.36), 0 9px 24px rgba(40,70,82,.08);
+      transform: translateY(-1px);
+    }
+
+    button:active,
+    nav button:active {
+      transform: translateY(0) scale(.975);
+    }
+
+    button.primary {
+      color: #fff;
+      border-color: rgba(255,255,255,.46);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.38), transparent 42%),
+        linear-gradient(145deg, color-mix(in srgb, var(--accent) 92%, #4be0ff), var(--accent-strong));
+      box-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 22%, transparent), inset 0 1px 0 rgba(255,255,255,.56);
+    }
+
+    button.primary:hover {
+      filter: brightness(1.04) saturate(1.05);
+      box-shadow: 0 15px 34px color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255,255,255,.66);
+    }
+
+    nav button.active {
+      color: var(--accent-on-container);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.34), transparent 48%),
+        color-mix(in srgb, var(--accent-container) 72%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 30%, var(--glass-stroke));
+      box-shadow: 0 10px 28px color-mix(in srgb, var(--accent) 12%, transparent), inset 0 1px 0 rgba(255,255,255,.54);
+    }
+
+    .pill,
+    .segmented button.active {
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.28), transparent 58%),
+        color-mix(in srgb, var(--accent-container) 78%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 24%, var(--glass-stroke));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.42);
+    }
+
+    .warning {
+      background: color-mix(in srgb, var(--warning-container) 62%, transparent);
+      -webkit-backdrop-filter: blur(16px) saturate(140%);
+      backdrop-filter: blur(16px) saturate(140%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.30);
+    }
+
+    .terminal {
+      background: rgba(5, 14, 15, .78);
+      -webkit-backdrop-filter: blur(18px) saturate(130%);
+      backdrop-filter: blur(18px) saturate(130%);
+      border-color: rgba(119, 255, 228, .16);
+      box-shadow: 0 18px 44px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.05);
+    }
+
+    .auth-gate,
+    .modal {
+      background: rgba(5, 12, 16, .35);
+      -webkit-backdrop-filter: blur(26px) saturate(145%);
+      backdrop-filter: blur(26px) saturate(145%);
+    }
+
+    .toast {
+      color: var(--text);
+      border: 1px solid var(--glass-stroke);
+      background: var(--glass-surface-strong);
+      -webkit-backdrop-filter: blur(24px) saturate(175%);
+      backdrop-filter: blur(24px) saturate(175%);
+      box-shadow: var(--glass-shadow);
+    }
+
+    .empty {
+      border-color: var(--glass-stroke);
+      background: var(--glass-surface-soft);
+      -webkit-backdrop-filter: var(--glass-blur-soft);
+      backdrop-filter: var(--glass-blur-soft);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.28);
+    }
+
+    @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+      .sidebar,
+      .panel,
+      .stat,
+      .row-card,
+      .kv,
+      .sidebar-foot,
+      .token-box,
+      .check,
+      .segmented,
+      .auth-card,
+      .modal-card,
+      .operation-state:not(:empty),
+      button,
+      select,
+      input {
+        background: var(--surface);
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        background:
+          radial-gradient(circle at 12% 10%, rgba(86, 198, 255, .30), transparent 22rem),
+          radial-gradient(circle at 88% 18%, rgba(114, 255, 209, .22), transparent 24rem),
+          linear-gradient(155deg, #e8f6fa, #eff5f2 55%, #f0edfa);
+        background-attachment: fixed;
+      }
+
+      .sidebar {
+        background: var(--glass-surface-strong);
+        border-bottom-color: var(--glass-stroke-soft);
+        box-shadow: 0 12px 34px rgba(44, 74, 88, .10), inset 0 -1px 0 var(--glass-stroke-soft);
+      }
+    }
+  </style>
 </head>
 <body>
 <div id="authGate" class="auth-gate hidden">
